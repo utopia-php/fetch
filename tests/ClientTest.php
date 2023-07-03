@@ -43,7 +43,7 @@ final class ClientTest extends TestCase
             $respData = $resp->array(); // Convert body to array
             $this->assertEquals($respData['method'], $method); // Assert that the method is equal to the response's method
             if($method != Client::METHOD_GET) {
-                if($body == []) { // if body is empty then response body should be an empty string
+                if(empty($body)) { // if body is empty then response body should be an empty string
                     $this->assertEquals($respData['body'], '');
                 } else {
                     $this->assertEquals( // Assert that the body is equal to the response's body

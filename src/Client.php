@@ -39,21 +39,23 @@ class Client
 
         return $output;
     }
-  /**
-     * Private static method to process the data before making the request
+    /**
+     * This method is used to make a request to the server
+     * @param string $url
      * @param array<string, string> $headers
+     * @param string $method
      * @param array<string>|array<string, mixed> $body
      * @param array<string, mixed> $query
-     * @param string $method
-     * @param string $url
+     * @return Response
      */
-    private function processData(
-        array &$headers,
-        array &$body,
-        array $query,
-        string &$method,
-        string &$url
-    ): void {
+    private function buildResponse(
+        string $url,
+        array $headers,
+        string $method,
+        array $body,
+        array $query
+    ): Response {
+        // Process the data before making the request
         if(!$method) { // if method is not set, set it to GET by default
             $method = self::METHOD_GET;
         } else { // else convert the method to uppercase
@@ -64,21 +66,12 @@ class Client
             $headers['content-type'] = 'application/json';
         }
         if(isset($headers['content-type'])) {
-            switch($headers['content-type']) { // Convert the body to the appropriate format
-                case 'application/json':
-                    $body = json_encode($body);
-                    break;
-                case 'application/x-www-form-urlencoded':
-                    $body = $this->flatten($body);
-                    break;
-                case 'multipart/form-data':
-                    $body = $this->flatten($body);
-                    break;
-                case 'application/graphql':
-                    $body = $body[0];
-                    break;
-                default:
-            }
+            match ($headers['content-type']) { // Convert the body to the appropriate format
+                'application/json' => $body = json_encode($body),
+                'application/x-www-form-urlencoded' => $body = $this->flatten($body),
+                'multipart/form-data' => $body = $this->flatten($body),
+                'application/graphql' => $body = $body[0],
+            };
         }
         if(!is_array($headers)) {
             $headers = [];
@@ -90,31 +83,6 @@ class Client
         if($query) {  // if the request has a query string, append it to the request URI
             $url .= '?' . http_build_query($query);
         }
-    }
-  /**
-   * This method is used to make a request to the server
-   * @param string $url
-   * @param array<string, string> $headers
-   * @param string $method
-   * @param array<string>|array<string, mixed> $body
-   * @param array<string, mixed> $query
-   * @return Response
-   */
-    private function fetchHelper(
-        string $url,
-        array $headers,
-        string $method,
-        array $body,
-        array $query
-    ): Response {
-        // Process the data before making the request
-        $this->processData(
-            $headers,
-            $body,
-            $query,
-            $method,
-            $url
-        );
         $resp_headers = [];
         // Initialize the curl session
         $ch = curl_init();
@@ -141,7 +109,6 @@ class Client
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0);
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $resp_body = curl_exec($ch); // Execute the curl session
         $resp_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -168,7 +135,7 @@ class Client
         return $resp;
     }
     /**
-     * This method is used to make a call to the private fetchHelper method
+     * This method is used to make a call to the private buildResponse method
      * @param string $url
      * @param array<string, string> $headers
      * @param string $method
@@ -186,7 +153,7 @@ class Client
         array $query = []
     ): Response {
         $client = new Client();
-        return $client->fetchHelper(
+        return $client->buildResponse(
             $url,
             $headers,
             $method,
