@@ -19,5 +19,5 @@ jobs:
         
       - name: Run Tests
         run: php -S localhost:8000 tests/router.php &
-          vendor/bin/phpunit --configuration phpunit.xml tests
+          composer test
 
