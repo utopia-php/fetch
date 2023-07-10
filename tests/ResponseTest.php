@@ -13,7 +13,6 @@ final class ResponseTest extends TestCase
      * @param int $statusCode
      * @param string $url
      * @param string $method
-     * @param string $type
      * @return void
      */
     public function testClassConstructorAndGetters(
@@ -22,7 +21,6 @@ final class ResponseTest extends TestCase
         $statusCode,
         $url,
         $method,
-        $type
     ): void {
         $resp = new Response(
             body: $body,
@@ -30,14 +28,12 @@ final class ResponseTest extends TestCase
             statusCode: $statusCode,
             url: $url,
             method: $method,
-            type: $type
         );
         $this->assertEquals($body, $resp->getBody());
         $this->assertEquals($headers, $resp->getHeaders());
         $this->assertEquals($statusCode, $resp->getStatusCode());
         $this->assertEquals($url, $resp->getUrl());
         $this->assertEquals($method, $resp->getMethod());
-        $this->assertEquals($type, $resp->getType());
         $this->assertEquals($statusCode>=200 && $statusCode<300, $resp->isOk());
     }
 
@@ -49,7 +45,6 @@ final class ResponseTest extends TestCase
      * @param int $statusCode
      * @param string $url
      * @param string $method
-     * @param string $type
      * @return void
      */
     public function testClassMethods(
@@ -58,7 +53,6 @@ final class ResponseTest extends TestCase
         $statusCode,
         $url,
         $method,
-        $type,
     ) {
         $resp = new Response(
             body: $body,
@@ -66,7 +60,6 @@ final class ResponseTest extends TestCase
             statusCode: $statusCode,
             url: $url,
             method: $method,
-            type: $type,
         );
         $this->assertEquals($body, $resp->getBody()); // Assert that the body is equal to the response's body
         $jsonBody = json_decode($body); // Convert JSON string to object

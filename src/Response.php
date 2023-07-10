@@ -36,12 +36,6 @@ class Response
      */
     private string $method;
     /**
-     * Response Body Type
-     *
-     * @var string
-     */
-    private string $type;
-    /**
      * Response URL
      *
      * @var string
@@ -59,7 +53,6 @@ class Response
      * @param string $method
      * @param string $url
      * @param int $statusCode
-     * @param string $type
      * @param string $body
      * @param array<string, string> $headers
      * @return void
@@ -68,7 +61,6 @@ class Response
         string $method,
         string $url,
         int $statusCode=200,
-        string $type='',
         string $body='',
         array $headers=[],
     ) {
@@ -77,7 +69,6 @@ class Response
         $this->statusCode = $statusCode;
         $this->method = $method;
         $this->url = $url;
-        $this->type = $type;
         $this->ok = $statusCode >= 200 && $statusCode < 300;
     }
     # Getters
@@ -128,14 +119,6 @@ class Response
     public function getUrl(): string
     {
         return $this->url;
-    }
-    /**
-     * This method is used to get the response body type
-     * @return string
-     */
-    public function getType(): string
-    {
-        return $this->type;
     }
     // Methods
 

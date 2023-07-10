@@ -112,7 +112,6 @@ class Client
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $resp_body = curl_exec($ch); // Execute the curl session
         $resp_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $resp_type = $resp_headers['content-type'] ?? '';
 
         if (curl_errno($ch)) {
             $error_msg = curl_error($ch);
@@ -130,7 +129,6 @@ class Client
             statusCode: $resp_status,
             headers: $resp_headers,
             body: strval($resp_body),
-            type: $resp_type
         );
         return $resp;
     }
