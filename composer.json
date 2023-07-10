@@ -12,10 +12,10 @@
         "phpstan/phpstan": "^1.10"
     },
     "scripts": {
-        "test": "phpunit --verbose tests",
-        "check": "./vendor/bin/phpstan analyse --level max src tests",
-        "lint": "pint --test",
-        "format": "pint"
+        "lint": "./vendor/bin/pint --test --config pint.json",
+        "format": "./vendor/bin/pint --config pint.json",
+        "check": "./vendor/bin/phpstan analyse -c phpstan.neon",
+        "test": "./vendor/bin/phpunit --configuration phpunit.xml --debug"
     },
     "autoload": {
         "psr-4": {
