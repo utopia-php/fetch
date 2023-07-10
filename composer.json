@@ -22,10 +22,5 @@
             "Utopia\\Fetch\\": "src/"
         }
     },
-    "authors": [
-        {
-            "name": "Sahil Saha",
-            "email": "sahilsaha7773@gmail.com"
-        }
-    ]
+    "authors": []
 }
