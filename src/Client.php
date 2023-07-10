@@ -71,6 +71,7 @@ class Client
                 'application/x-www-form-urlencoded' => $body = $this->flatten($body),
                 'multipart/form-data' => $body = $this->flatten($body),
                 'application/graphql' => $body = $body[0],
+                default => $body = $body,
             };
         }
         if(!is_array($headers)) {
