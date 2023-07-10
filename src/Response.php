@@ -128,7 +128,7 @@ class Response
     */
     public function text(): string
     {
-        return strval($this->body);
+        return \strval($this->body);
     }
     /**
       * This method is used to convert the response body to JSON
@@ -136,25 +136,13 @@ class Response
     */
     public function json(): mixed
     {
-        $data = json_decode($this->body);
+        $data = \json_decode($this->body, true);
         if($data === null) { // Throw an exception if the data is null
             throw new \Exception('Error decoding JSON');
         }
         return $data;
     }
 
-    /**
-      * This method is used to convert the response body to an array
-      * @return array<mixed>
-    */
-    public function array(): array
-    {
-        $json = json_decode($this->body, true);
-        if (!is_array($json)) {
-            throw new \Exception('Failed to parse response: ' . $this->body);
-        }
-        return $json;
-    }
     /*
     * This method is used to convert the response body to blob
     * @return string

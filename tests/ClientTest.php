@@ -40,7 +40,7 @@ final class ClientTest extends TestCase
             return;
         }
         if ($resp->isOk()) { // If the response is OK
-            $respData = $resp->array(); // Convert body to array
+            $respData = $resp->json(); // Convert body to array
             $this->assertEquals($respData['method'], $method); // Assert that the method is equal to the response's method
             if($method != Client::METHOD_GET) {
                 if(empty($body)) { // if body is empty then response body should be an empty string
@@ -84,7 +84,7 @@ final class ClientTest extends TestCase
             return;
         }
         if ($resp->isOk()) { // If the response is OK
-            $respData = $resp->array(); // Convert body to array
+            $respData = $resp->json(); // Convert body to array
             if(isset($respData['method'])) {
                 $this->assertEquals($respData['method'], Client::METHOD_POST);
             } // Assert that the method is equal to the response's method

@@ -62,7 +62,7 @@ final class ResponseTest extends TestCase
             method: $method,
         );
         $this->assertEquals($body, $resp->getBody()); // Assert that the body is equal to the response's body
-        $jsonBody = json_decode($body); // Convert JSON string to object
+        $jsonBody = \json_decode($body, true); // Convert JSON string to object
         $this->assertEquals($jsonBody, $resp->json()); // Assert that the JSON body is equal to the response's JSON body
         $bin = ""; // Convert string to binary
         for($i = 0, $j = strlen($body); $i < $j; $i++) {
