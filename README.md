@@ -22,7 +22,41 @@ The `Response` object has the following methods:
 - `json()` - Returns the response body as an **associative array**.
 - `blob()` - Converts the response body to blob and return it as a **String**.
   
-Here is a basic example of the library:
+## Examples
+### GET request
+```php
+<?php
+require_once __DIR__ . '/vendor/autoload.php';
+use Utopia\Fetch\Client;
+
+$url = 'https://httpbin.org/get';
+$method = 'GET';
+$query = [
+  'foo' => 'bar'
+];
+
+$resp = Client::fetch(
+  url: $url,
+  method: $method,
+  query: $query
+);
+
+if($resp->isOk()) { 
+  print("Status Code: " . $resp->getStatusCode() . "\n");
+  print("Response Headers:\n");
+  print_r($resp->getHeaders());
+  print("Response Body:\n");
+  print($resp->getBody());
+}
+else {
+  print("Error: " . $resp->getStatusCode() . "\n");
+  print("Response Headers:\n");
+  print_r($resp->getHeaders());
+  print("Response Body:\n");
+  print($resp->getBody());
+}
+```
+### POST request
 ```php
 <?php
 require_once __DIR__ . '/vendor/autoload.php';
@@ -46,6 +80,32 @@ $resp = Client::fetch(
   headers: $headers,
   body: $body,
   query: $query
+);
+
+print_r($resp->json());
+```
+### Send a file
+```php
+<?php
+require_once __DIR__ . '/vendor/autoload.php';
+use Utopia\Fetch\Client;
+
+$url = 'http://localhost:8000';
+$method = 'POST';
+$headers = [
+  'Content-Type' => 'application/json',
+];
+$filePath = strval(realpath(__DIR__ . '/tests/resources/logo.png')); // Absolute path to the file
+
+$body = [
+    'file' => new \CURLFile($filePath, 'image/png', 'logo.png')
+];
+
+$resp = Client::fetch(
+  url: $url,
+  method: $method,
+  headers: $headers,
+  body: $body
 );
 
 print_r($resp->json());
