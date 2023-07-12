@@ -30,8 +30,7 @@ final class ClientTest extends TestCase
             $resp = Client::fetch(
                 url: $url,
                 method: $method,
-                headers: [
-                ],
+                headers: $headers,
                 body: $body,
                 query: $query
             );
@@ -46,10 +45,12 @@ final class ClientTest extends TestCase
                 if(empty($body)) { // if body is empty then response body should be an empty string
                     $this->assertEquals($respData['body'], '');
                 } else {
-                    $this->assertEquals( // Assert that the body is equal to the response's body
-                        $respData['body'],
-                        json_encode($body) // Converting the body to JSON string
-                    );
+                    if($headers['content-type']!="application/x-www-form-urlencoded") {
+                        $this->assertEquals( // Assert that the body is equal to the response's body
+                            $respData['body'],
+                            json_encode($body) // Converting the body to JSON string
+                        );
+                    }
                 }
             }
             $this->assertEquals($respData['url'], $url); // Assert that the url is equal to the response's url
@@ -57,6 +58,24 @@ final class ClientTest extends TestCase
                 json_encode($respData['query']), // Converting the query to JSON string
                 json_encode($query) // Converting the query to JSON string
             ); // Assert that the args are equal to the response's args
+            $respHeaders = json_decode($respData['headers'], true); // Converting the headers to array
+            $host = $respHeaders['Host'];
+            if(array_key_exists('Content-Type', $respHeaders)) {
+                $contentType = $respHeaders['Content-Type'];
+            } else {
+                $contentType = $respHeaders['content-type'];
+            }
+            $contentType = explode(';', $contentType)[0];
+            $this->assertEquals($host, $url); // Assert that the host is equal to the response's host
+            if(empty($headers)) {
+                if(empty($body)) {
+                    $this->assertEquals($contentType, 'application/x-www-form-urlencoded');
+                } else {
+                    $this->assertEquals($contentType, 'application/json');
+                }
+            } else {
+                $this->assertEquals($contentType, $headers['content-type']); // Assert that the content-type is equal to the response's content-type
+            }
         } else { // If the response is not OK
             echo "Please configure your PHP inbuilt SERVER";
         }
@@ -149,7 +168,7 @@ final class ClientTest extends TestCase
                     'age' => 30,
                 ],
                 [
-                    'content-type' => 'x-www-form-urlencoded'
+                    'content-type' => 'application/x-www-form-urlencoded'
                 ],
             ]
         ];
