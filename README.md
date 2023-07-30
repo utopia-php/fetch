@@ -1,5 +1,5 @@
 # Utopia Fetch
-Lite & fast micro PHP library that prodides a convenient and flexible way to perform HTTP requests in PHP applications.
+Lite & fast micro PHP library that provides a convenient and flexible way to perform HTTP requests in PHP applications.
 
 # Usage
 The library provides a static method `Client::fetch()` that returns a `Response` object.
