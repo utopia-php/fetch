@@ -58,14 +58,19 @@ class Client
         string $url,
         array $headers = [],
         string $method = self::METHOD_GET,
-        array $body,
-        array $query
+        array $body = [],
+        array $query = []
     ): Response {
         // Process the data before making the request
         if(!$method) { // if method is not set, set it to GET by default
             $method = self::METHOD_GET;
         } else { // else convert the method to uppercase
-            $method = strtoupper($method);
+            if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE ])) {
+                throw new FetchException("Unsupported HTTP method");
+            }
+            else {
+                $method = strtoupper($method);
+            }
         }
         if(!is_array($headers)) {
             $headers = [];
