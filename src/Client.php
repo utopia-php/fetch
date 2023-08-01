@@ -74,10 +74,6 @@ class Client
         if(!is_array($headers)) {
             $headers = [];
         }
-        // if there are no headers but a body set header to json by default
-        if(!isset($headers['content-type']) && is_array($body) && count($body) > 0) {
-            $headers['content-type'] = 'application/json';
-        }
         if(isset($headers['content-type'])) {
             match ($headers['content-type']) { // Convert the body to the appropriate format
                 self::CONTENT_TYPE_APPLICATION_JSON => $body = json_encode($body),
@@ -129,7 +125,6 @@ class Client
         curl_close($ch);
 
         if (isset($error_msg)) {
-            // TODO - Handle cURL error accordingly
             throw new FetchException($error_msg);
         }
         $resp = new Response(
