@@ -92,6 +92,7 @@ final class ClientTest extends TestCase
                 url: 'localhost:8000',
                 method: Client::METHOD_POST,
                 headers: [
+                    'content-type' => 'multipart/form-data'
                 ],
                 body: [
                     'file' => new \CURLFile(strval(realpath(__DIR__ . '/resources/logo.png')), 'image/png', 'logo.png')
@@ -112,14 +113,19 @@ final class ClientTest extends TestCase
                 json_encode($respData['query']), // Converting the query to JSON string
                 json_encode([]) // Converting the query to JSON string
             ); // Assert that the args are equal to the response's args
-            $body = [ // Expected response body for file
+            $files = [ // Expected files array from response
                 'file' => [
-                    'name' => __DIR__.'/resources/logo.png',
-                    'mime' => 'image/png',
-                    'postname' => 'logo.png'
+                    'name' => "logo.png",
+                    'full_path'=> "logo.png",
+                    'type'=> "image/png",
+                    'error'=> 0
                 ]
             ];
-            $this->assertEquals($respData['body'], json_encode($body)); // Assert that the expected body is equal to the response's body
+            $resp_files = json_decode($respData['files'], true);
+            $this->assertEquals($files['file']['name'], $resp_files['file']['name']);
+            $this->assertEquals($files['file']['full_path'], $resp_files['file']['full_path']);
+            $this->assertEquals($files['file']['type'], $resp_files['file']['type']);
+            $this->assertEquals($files['file']['error'], $resp_files['file']['error']);
         } else { // If the response is not OK
             echo "Please configure your PHP inbuilt SERVER";
         }
