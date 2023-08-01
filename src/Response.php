@@ -29,31 +29,15 @@ class Response
      * @var int
      */
     private int $statusCode;
-    /**
-     * Response Method
-     *
-     * @var string
-     */
-    private string $method;
-    /**
-     * Response URL
-     *
-     * @var string
-     */
-    private string $url;
 
     /**
      * Response constructor
-     * @param string $method
-     * @param string $url
      * @param int $statusCode
      * @param string $body
      * @param array<string, string> $headers
      * @return void
      */
     public function __construct(
-        string $method,
-        string $url,
         int $statusCode=200,
         string $body='',
         array $headers=[],
@@ -61,8 +45,6 @@ class Response
         $this->body = $body;
         $this->headers = $headers;
         $this->statusCode = $statusCode;
-        $this->method = $method;
-        $this->url = $url;
     }
     # Getters
     /**
@@ -88,22 +70,6 @@ class Response
     public function getStatusCode(): int
     {
         return $this->statusCode;
-    }
-    /**
-     * This method is used to get the response method
-     * @return string
-     */
-    public function getMethod(): string
-    {
-        return $this->method;
-    }
-    /**
-     * This method is used to get the response URL
-     * @return string
-     */
-    public function getUrl(): string
-    {
-        return $this->url;
     }
     // Methods
 

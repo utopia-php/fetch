@@ -133,8 +133,6 @@ class Client
             throw new FetchException($error_msg);
         }
         $resp = new Response(
-            method: $method,
-            url: $url,
             statusCode: $resp_status,
             headers: $resp_headers,
             body: strval($resp_body),

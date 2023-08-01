@@ -11,29 +11,21 @@ final class ResponseTest extends TestCase
      * @param string $body
      * @param array<string, string> $headers
      * @param int $statusCode
-     * @param string $url
-     * @param string $method
      * @return void
      */
     public function testClassConstructorAndGetters(
         $body,
         $headers,
-        $statusCode,
-        $url,
-        $method,
+        $statusCode
     ): void {
         $resp = new Response(
             body: $body,
             headers: $headers,
-            statusCode: $statusCode,
-            url: $url,
-            method: $method,
+            statusCode: $statusCode
         );
         $this->assertEquals($body, $resp->getBody());
         $this->assertEquals($headers, $resp->getHeaders());
         $this->assertEquals($statusCode, $resp->getStatusCode());
-        $this->assertEquals($url, $resp->getUrl());
-        $this->assertEquals($method, $resp->getMethod());
     }
 
     /**
@@ -42,23 +34,17 @@ final class ResponseTest extends TestCase
      * @param string $body
      * @param array<string, string> $headers
      * @param int $statusCode
-     * @param string $url
-     * @param string $method
      * @return void
      */
     public function testClassMethods(
         $body,
         $headers,
-        $statusCode,
-        $url,
-        $method,
+        $statusCode
     ) {
         $resp = new Response(
             body: $body,
             headers: $headers,
             statusCode: $statusCode,
-            url: $url,
-            method: $method,
         );
         $this->assertEquals($body, $resp->getBody()); // Assert that the body is equal to the response's body
         $jsonBody = \json_decode($body, true); // Convert JSON string to object
@@ -81,10 +67,7 @@ final class ResponseTest extends TestCase
             [
               'content-type' => 'application/json'
             ],
-            200,
-            'http://localhost:8001/post',
-            'POST',
-            'application/json'
+            200
           ],
         ];
     }
