@@ -67,8 +67,7 @@ class Client
         } else { // else convert the method to uppercase
             if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE ])) {
                 throw new FetchException("Unsupported HTTP method");
-            }
-            else {
+            } else {
                 $method = strtoupper($method);
             }
         }
