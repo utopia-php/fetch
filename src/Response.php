@@ -14,9 +14,9 @@ class Response
     /**
      * Response Body
      *
-     * @var string
+     * @var mixed
      */
-    private string $body;
+    private $body;
     /**
      * Response Headers
      *
@@ -33,13 +33,13 @@ class Response
     /**
      * Response constructor
      * @param int $statusCode
-     * @param string $body
+     * @param mixed $body
      * @param array<string, string> $headers
      * @return void
      */
     public function __construct(
         int $statusCode=200,
-        string $body='',
+        $body='',
         array $headers=[],
     ) {
         $this->body = $body;
@@ -49,9 +49,9 @@ class Response
     # Getters
     /**
      * This method is used to get the response body as string
-     * @return string
+     * @return mixed
      */
-    public function getBody(): string
+    public function getBody(): mixed
     {
         return $this->body;
     }

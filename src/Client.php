@@ -130,7 +130,7 @@ class Client
         $resp = new Response(
             statusCode: $resp_status,
             headers: $resp_headers,
-            body: strval($resp_body),
+            body: $resp_body
         );
         return $resp;
     }
