@@ -17,6 +17,12 @@ class Client
     public const METHOD_OPTIONS = 'OPTIONS';
     public const METHOD_CONNECT = 'CONNECT';
     public const METHOD_TRACE = 'TRACE';
+
+    public const CONTENT_TYPE_APPLICATION_JSON = 'application/json';
+    public const CONTENT_TYPE_APPLICATION_FORM_URLENCODED = 'application/x-www-form-urlencoded';
+    public const CONTENT_TYPE_MULTIPART_FORM_DATA = 'multipart/form-data';
+    public const CONTENT_TYPE_GRAPHQL = 'application/graphql';
+
     /**
      * Flatten request body array to PHP multiple format
      *
@@ -50,8 +56,8 @@ class Client
      */
     private function buildResponse(
         string $url,
-        array $headers,
-        string $method,
+        array $headers = [],
+        string $method = self::METHOD_GET,
         array $body,
         array $query
     ): Response {
@@ -61,26 +67,24 @@ class Client
         } else { // else convert the method to uppercase
             $method = strtoupper($method);
         }
+        if(!is_array($headers)) {
+            $headers = [];
+        }
         // if there are no headers but a body set header to json by default
         if(!isset($headers['content-type']) && is_array($body) && count($body) > 0) {
             $headers['content-type'] = 'application/json';
         }
         if(isset($headers['content-type'])) {
             match ($headers['content-type']) { // Convert the body to the appropriate format
-                'application/json' => $body = json_encode($body),
-                'application/x-www-form-urlencoded' => $body = $this->flatten($body),
-                'multipart/form-data' => $body = $this->flatten($body),
-                'application/graphql' => $body = $body[0],
+                self::CONTENT_TYPE_APPLICATION_JSON => $body = json_encode($body),
+                self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => $body = $this->flatten($body),
+                self::CONTENT_TYPE_GRAPHQL => $body = $body[0],
                 default => $body = $body,
             };
         }
-        if(!is_array($headers)) {
-            $headers = [];
-        }
-        foreach ($headers as $i => $header) { // convert headers to appropriate format
-            $headers[] = $i . ':' . $header;
-            unset($headers[$i]);
-        }
+        $headers = array_map(function ($i, $header) { // convert headers to appropriate format
+            return $i . ':' . $header;
+        }, array_keys($headers), $headers);
         if($query) {  // if the request has a query string, append it to the request URI
             $url .= '?' . http_build_query($query);
         }
