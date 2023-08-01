@@ -41,12 +41,6 @@ class Response
      * @var string
      */
     private string $url;
-    /**
-     * Response OK
-     *
-     * @var bool
-     */
-    private bool $ok;
 
     /**
      * Response constructor
@@ -69,17 +63,8 @@ class Response
         $this->statusCode = $statusCode;
         $this->method = $method;
         $this->url = $url;
-        $this->ok = $statusCode >= 200 && $statusCode < 300;
     }
     # Getters
-    /**
-     * This method is used to check if the response is OK
-     * @return bool
-     */
-    public function isOk(): bool
-    {
-        return $this->ok;
-    }
     /**
      * This method is used to get the response body as string
      * @return string

@@ -38,7 +38,7 @@ final class ClientTest extends TestCase
             echo $e;
             return;
         }
-        if ($resp->isOk()) { // If the response is OK
+        if ($resp->getStatusCode()===200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
             $this->assertEquals($respData['method'], $method); // Assert that the method is equal to the response's method
             if($method != Client::METHOD_GET) {
@@ -102,7 +102,7 @@ final class ClientTest extends TestCase
             echo $e;
             return;
         }
-        if ($resp->isOk()) { // If the response is OK
+        if ($resp->getStatusCode()===200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
             if(isset($respData['method'])) {
                 $this->assertEquals($respData['method'], Client::METHOD_POST);

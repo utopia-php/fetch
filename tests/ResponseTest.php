@@ -34,7 +34,6 @@ final class ResponseTest extends TestCase
         $this->assertEquals($statusCode, $resp->getStatusCode());
         $this->assertEquals($url, $resp->getUrl());
         $this->assertEquals($method, $resp->getMethod());
-        $this->assertEquals($statusCode>=200 && $statusCode<300, $resp->isOk());
     }
 
     /**
