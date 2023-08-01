@@ -82,9 +82,14 @@ final class ClientTest extends TestCase
     }
     /**
      * Test for sending a file in the request body
+     * @dataProvider filesDataSet
      * @return void
      */
-    public function testSendFile(): void
+    public function testSendFile(
+        string $path,
+        string $contentType,
+        string $fileName
+    ): void
     {
         $resp = null;
         try {
@@ -95,7 +100,7 @@ final class ClientTest extends TestCase
                     'content-type' => 'multipart/form-data'
                 ],
                 body: [
-                    'file' => new \CURLFile(strval(realpath(__DIR__ . '/resources/logo.png')), 'image/png', 'logo.png')
+                    'file' => new \CURLFile(strval(realpath($path)), $contentType, $fileName)
                 ],
                 query: []
             );
@@ -115,9 +120,9 @@ final class ClientTest extends TestCase
             ); // Assert that the args are equal to the response's args
             $files = [ // Expected files array from response
                 'file' => [
-                    'name' => "logo.png",
-                    'full_path'=> "logo.png",
-                    'type'=> "image/png",
+                    'name' => $fileName,
+                    'full_path'=> $fileName,
+                    'type'=> $contentType,
                     'error'=> 0
                 ]
             ];
@@ -126,6 +131,32 @@ final class ClientTest extends TestCase
             $this->assertEquals($files['file']['full_path'], $resp_files['file']['full_path']);
             $this->assertEquals($files['file']['type'], $resp_files['file']['type']);
             $this->assertEquals($files['file']['error'], $resp_files['file']['error']);
+        } else { // If the response is not OK
+            echo "Please configure your PHP inbuilt SERVER";
+        }
+    }
+    /**
+     * Test for redirect
+     * @return void
+     */
+    public function testRedirect(): void
+    {
+        $resp = null;
+        try {
+            $resp = Client::fetch(
+                url: 'localhost:8000/redirect',
+                method: Client::METHOD_GET,
+                headers: [],
+                body: [],
+                query: []
+            );
+        } catch (FetchException $e) {
+            echo $e;
+            return;
+        }
+        if ($resp->getStatusCode()===200) { // If the response is OK
+            $respData = $resp->json(); // Convert body to array
+            $this->assertEquals($respData['page'], "redirectedPage"); // Assert that the page is the redirected page
         } else { // If the response is not OK
             echo "Please configure your PHP inbuilt SERVER";
         }
@@ -177,6 +208,26 @@ final class ClientTest extends TestCase
                     'content-type' => 'application/x-www-form-urlencoded'
                 ],
             ]
+        ];
+    }
+
+    /**
+     * Data provider for testSendFile
+     * @return array<string, array<mixed>>
+     */
+    public function filesDataSet(): array
+    {
+        return [
+            'imageFile' => [
+                __DIR__.'/resources/logo.png',
+                'image/png',
+                'logo.png'
+            ],
+            'textFile' => [
+                __DIR__.'/resources/test.txt',
+                'text/plain',
+                'text.txt'
+            ],
         ];
     }
 }
