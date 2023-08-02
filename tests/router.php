@@ -13,6 +13,20 @@ if($curPageName == 'redirect'){
   header('Location: http://localhost:8000/redirectedPage');
   exit;
 }
+if($curPageName=='image'){
+  $filename=__DIR__."/resources/logo.png";
+  header("Content-disposition: attachment;filename=$filename");
+  header("Content-type: application/octet-stream");
+  readfile($filename);
+  exit;
+}
+else if($curPageName=='text'){
+  $filename=__DIR__."/resources/test.txt";
+  header("Content-disposition: attachment;filename=$filename");
+  header("Content-type: application/octet-stream");
+  readfile($filename);
+  exit;
+}
 $resp = [
   'method' => $method,
   'url' => $url,

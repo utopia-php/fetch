@@ -82,7 +82,7 @@ final class ClientTest extends TestCase
     }
     /**
      * Test for sending a file in the request body
-     * @dataProvider filesDataSet
+     * @dataProvider sendFileDataSet
      * @return void
      */
     public function testSendFile(
@@ -131,6 +131,38 @@ final class ClientTest extends TestCase
             $this->assertEquals($files['file']['full_path'], $resp_files['file']['full_path']);
             $this->assertEquals($files['file']['type'], $resp_files['file']['type']);
             $this->assertEquals($files['file']['error'], $resp_files['file']['error']);
+        } else { // If the response is not OK
+            echo "Please configure your PHP inbuilt SERVER";
+        }
+    }
+    /**
+     * Test for getting a file as a response
+     * @dataProvider getFileDataSet
+     * @return void
+     */
+    public function testGetFile(
+        string $path,
+        string $type
+    ): void {
+        $resp = null;
+        try {
+            $resp = Client::fetch(
+                url: 'localhost:8000/'.$type,
+                method: Client::METHOD_GET,
+                headers: [],
+                body: [],
+                query: []
+            );
+        } catch (FetchException $e) {
+            echo $e;
+            return;
+        }
+        if ($resp->getStatusCode()===200) { // If the response is OK
+            $data = fopen ($path, 'rb');
+            $size=filesize ($path);
+            $contents= fread ($data, $size);
+            fclose ($data);
+            $this->assertEquals($resp->getBody(), $contents); // Assert that the body is equal to the expected file contents
         } else { // If the response is not OK
             echo "Please configure your PHP inbuilt SERVER";
         }
@@ -215,7 +247,7 @@ final class ClientTest extends TestCase
      * Data provider for testSendFile
      * @return array<string, array<mixed>>
      */
-    public function filesDataSet(): array
+    public function sendFileDataSet(): array
     {
         return [
             'imageFile' => [
@@ -227,6 +259,20 @@ final class ClientTest extends TestCase
                 __DIR__.'/resources/test.txt',
                 'text/plain',
                 'text.txt'
+            ],
+        ];
+    }
+
+    public function getFileDataset(): array
+    {
+        return [
+            'imageFile' => [
+                __DIR__.'/resources/logo.png',
+                'image'
+            ],
+            'textFile' => [
+                __DIR__.'/resources/test.txt',
+                'text'
             ],
         ];
     }
