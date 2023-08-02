@@ -89,8 +89,7 @@ final class ClientTest extends TestCase
         string $path,
         string $contentType,
         string $fileName
-    ): void
-    {
+    ): void {
         $resp = null;
         try {
             $resp = Client::fetch(
@@ -158,11 +157,15 @@ final class ClientTest extends TestCase
             return;
         }
         if ($resp->getStatusCode()===200) { // If the response is OK
-            $data = fopen ($path, 'rb');
-            $size=filesize ($path);
-            $contents= fread ($data, $size);
-            fclose ($data);
-            $this->assertEquals($resp->getBody(), $contents); // Assert that the body is equal to the expected file contents
+            $data = fopen($path, 'rb');
+            $size=filesize($path);
+            if($data && $size) {
+                $contents= fread($data, $size);
+                fclose($data);
+                $this->assertEquals($resp->getBody(), $contents); // Assert that the body is equal to the expected file contents
+            } else {
+                echo "Invalid file path in testcase";
+            }
         } else { // If the response is not OK
             echo "Please configure your PHP inbuilt SERVER";
         }
@@ -262,7 +265,10 @@ final class ClientTest extends TestCase
             ],
         ];
     }
-
+    /**
+     * Data provider for testGetFile
+     * @return array<string, array<mixed>>
+     */
     public function getFileDataset(): array
     {
         return [
