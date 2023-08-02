@@ -86,6 +86,7 @@ class Client
             return $i . ':' . $header;
         }, array_keys($headers), $headers);
         if($query) {  // if the request has a query string, append it to the request URI
+            $url = rtrim($url, '?');
             $url .= '?' . http_build_query($query);
         }
         $resp_headers = [];
