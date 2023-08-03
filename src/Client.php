@@ -52,6 +52,7 @@ class Client
      * @param string $method
      * @param array<string>|array<string, mixed> $body
      * @param array<string, mixed> $query
+     * @param int $timeout
      * @return Response
      */
     public static function fetch(
@@ -59,7 +60,8 @@ class Client
         array $headers = [],
         string $method = self::METHOD_GET,
         array $body = [],
-        array $query = []
+        array $query = [],
+        int $timeout = 15
     ): Response {
         // Process the data before making the request
         if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE ])) { // If the method is not supported
@@ -104,7 +106,7 @@ class Client
             return $len;
         });
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $responseBody = curl_exec($ch); // Execute the curl session
