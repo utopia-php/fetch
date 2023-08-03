@@ -30,14 +30,14 @@ class Client
      * @param string $prefix
      * @return array<mixed>
      */
-    private function flatten(array $data, string $prefix = ''): array
+    private static function flatten(array $data, string $prefix = ''): array
     {
         $output = [];
         foreach ($data as $key => $value) {
             $finalKey = $prefix ? "{$prefix}[{$key}]" : $key;
 
             if (is_array($value)) {
-                $output += $this->flatten($value, $finalKey); // @todo: handle name collision here if needed
+                $output += self::flatten($value, $finalKey); // @todo: handle name collision here if needed
             } else {
                 $output[$finalKey] = $value;
             }
@@ -54,7 +54,7 @@ class Client
      * @param array<string, mixed> $query
      * @return Response
      */
-    private function buildResponse(
+    public static function fetch(
         string $url,
         array $headers = [],
         string $method = self::METHOD_GET,
@@ -62,22 +62,13 @@ class Client
         array $query = []
     ): Response {
         // Process the data before making the request
-        if(!$method) { // if method is not set, set it to GET by default
-            $method = self::METHOD_GET;
-        } else { // else convert the method to uppercase
-            if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE ])) {
-                throw new FetchException("Unsupported HTTP method");
-            } else {
-                $method = strtoupper($method);
-            }
-        }
-        if(!is_array($headers)) {
-            $headers = [];
+        if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE ])) { // If the method is not supported
+            throw new FetchException("Unsupported HTTP method");
         }
         if(isset($headers['content-type'])) {
             match ($headers['content-type']) { // Convert the body to the appropriate format
                 self::CONTENT_TYPE_APPLICATION_JSON => $body = json_encode($body),
-                self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => $body = $this->flatten($body),
+                self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => $body = self::flatten($body),
                 self::CONTENT_TYPE_GRAPHQL => $body = $body[0],
                 default => $body = $body,
             };
@@ -89,7 +80,7 @@ class Client
             $url = rtrim($url, '?');
             $url .= '?' . http_build_query($query);
         }
-        $resp_headers = [];
+        $responseHeaders = [];
         // Initialize the curl session
         $ch = curl_init();
         // Set the request URI
@@ -101,7 +92,7 @@ class Client
         // Set the request body
         curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         // Save the response headers
-        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) use (&$resp_headers) {
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) use (&$responseHeaders) {
             $len = strlen($header);
             $header = explode(':', $header, 2);
 
@@ -109,57 +100,29 @@ class Client
                 return $len;
             }
 
-            $resp_headers[strtolower(trim($header[0]))] = trim($header[1]);
+            $responseHeaders[strtolower(trim($header[0]))] = trim($header[1]);
             return $len;
         });
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60);
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $resp_body = curl_exec($ch); // Execute the curl session
-        $resp_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $responseBody = curl_exec($ch); // Execute the curl session
+        $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if (curl_errno($ch)) {
-            $error_msg = curl_error($ch);
-            print_r(curl_errno($ch));
+            $errorMsg = curl_error($ch);
         }
         curl_close($ch);
 
-        if (isset($error_msg)) {
-            throw new FetchException($error_msg);
+        if (isset($errorMsg)) {
+            throw new FetchException($errorMsg);
         }
-        $resp = new Response(
-            statusCode: $resp_status,
-            headers: $resp_headers,
-            body: $resp_body
+        $response = new Response(
+            statusCode: $responseStatusCode,
+            headers: $responseHeaders,
+            body: $responseBody
         );
-        return $resp;
-    }
-    /**
-     * This method is used to make a call to the private buildResponse method
-     * @param string $url
-     * @param array<string, string> $headers
-     * @param string $method
-     * @param array<string>|array<string, mixed> $body
-     * @param array<string, mixed> $query
-     * @return Response
-     */
-    public static function fetch(
-        string $url,
-        array $headers = [
-            'content-type' => ''
-        ],
-        string $method = self::METHOD_GET,
-        array $body = [],
-        array $query = []
-    ): Response {
-        $client = new Client();
-        return $client->buildResponse(
-            $url,
-            $headers,
-            $method,
-            $body,
-            $query
-        );
+        return $response;
     }
 }

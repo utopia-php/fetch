@@ -14,6 +14,6 @@ class FetchException extends \Exception
     }
     public function __toString()
     {
-        return __CLASS__ . "{$this->message}\n"; // Return the class name, code and message
+        return __CLASS__ . " {$this->message}\n"; // Return the class name, code and message
     }
 }

@@ -38,9 +38,9 @@ class Response
      * @return void
      */
     public function __construct(
-        int $statusCode=200,
-        $body='',
-        array $headers=[],
+        int $statusCode,
+        $body,
+        array $headers,
     ) {
         $this->body = $body;
         $this->headers = $headers;
