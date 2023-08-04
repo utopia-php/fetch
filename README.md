@@ -10,6 +10,7 @@ The `Client::fetch()` method accepts the following parameters:
 - `headers` - An **associative array** of HTTP headers to send.
 - `body` - An **associative array** of data to send as the body of the request.
 - `query` - An **associative array** of query parameters.
+- `timeout` - An **integer** representing the maximum number of seconds to allow cURL functions to execute, the default is `15`.
   
 The `Response` object has the following methods:
 - `isOk()` - Returns **true** if the response status code is in the range 200-299, **false** otherwise.
