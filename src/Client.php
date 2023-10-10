@@ -50,7 +50,7 @@ class Client
      * @param string $url
      * @param array<string, string> $headers
      * @param string $method
-     * @param array<string>|array<string, mixed> $body
+     * @param string $body
      * @param array<string, mixed> $query
      * @param int $timeout
      * @return Response
@@ -59,7 +59,7 @@ class Client
         string $url,
         array $headers = [],
         string $method = self::METHOD_GET,
-        array $body = [],
+        string $body = '',
         array $query = [],
         int $timeout = 15
     ): Response {
