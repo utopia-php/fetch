@@ -1,0 +1,23 @@
+name: "Tests"
+
+on: [ pull_request ]
+jobs:
+  lint:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - run: git checkout HEAD^2
+      
+      - name: Install dependencies
+        run: composer install --profile --ignore-platform-reqs 
+        
+      - name: Run Tests
+        run: php -S localhost:8000 tests/router.php &
+          composer test
+
