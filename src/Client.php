@@ -94,7 +94,7 @@ class Client
             CURLOPT_HEADERFUNCTION => function ($curl, $header) use (&$responseHeaders) {
                 $len = strlen($header);
                 $header = explode(':', $header, 2);
-                if (count($header) < 2) {
+                if (count($header) < 2) {  // ignore invalid headers
                     return $len;
                 }
                 $responseHeaders[strtolower(trim($header[0]))] = trim($header[1]);
@@ -128,7 +128,7 @@ class Client
             headers: $responseHeaders,
             body: $responseBody
         );
-        
+
         return $response;
     }
     
