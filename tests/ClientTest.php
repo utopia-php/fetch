@@ -26,11 +26,16 @@ final class ClientTest extends TestCase
         $query = []
     ): void {
         $resp = null;
+
         try {
-            $resp = Client::fetch(
+            $client = new Client();
+            foreach($headers as $key => $value) {
+                $client->addHeader($key, $value);
+            }
+
+            $resp = $client->fetch(
                 url: $url,
                 method: $method,
-                headers: $headers,
                 body: $body,
                 query: $query
             );
@@ -38,14 +43,14 @@ final class ClientTest extends TestCase
             echo $e;
             return;
         }
-        if ($resp->getStatusCode()===200) { // If the response is OK
+        if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
             $this->assertEquals($respData['method'], $method); // Assert that the method is equal to the response's method
             if($method != Client::METHOD_GET) {
                 if(empty($body)) { // if body is empty then response body should be an empty string
                     $this->assertEquals($respData['body'], '');
                 } else {
-                    if($headers['content-type']!="application/x-www-form-urlencoded") {
+                    if($headers['content-type'] != "application/x-www-form-urlencoded") {
                         $this->assertEquals( // Assert that the body is equal to the response's body
                             $respData['body'],
                             json_encode($body) // Converting the body to JSON string
@@ -92,12 +97,11 @@ final class ClientTest extends TestCase
     ): void {
         $resp = null;
         try {
-            $resp = Client::fetch(
+            $client = new Client();
+            $client->addHeader('Content-type', 'multipart/form-data');
+            $resp = $client->fetch(
                 url: 'localhost:8000',
                 method: Client::METHOD_POST,
-                headers: [
-                    'content-type' => 'multipart/form-data'
-                ],
                 body: [
                     'file' => new \CURLFile(strval(realpath($path)), $contentType, $fileName)
                 ],
@@ -107,7 +111,7 @@ final class ClientTest extends TestCase
             echo $e;
             return;
         }
-        if ($resp->getStatusCode()===200) { // If the response is OK
+        if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
             if(isset($respData['method'])) {
                 $this->assertEquals($respData['method'], Client::METHOD_POST);
@@ -120,9 +124,9 @@ final class ClientTest extends TestCase
             $files = [ // Expected files array from response
                 'file' => [
                     'name' => $fileName,
-                    'full_path'=> $fileName,
-                    'type'=> $contentType,
-                    'error'=> 0
+                    'full_path' => $fileName,
+                    'type' => $contentType,
+                    'error' => 0
                 ]
             ];
             $resp_files = json_decode($respData['files'], true);
@@ -145,10 +149,10 @@ final class ClientTest extends TestCase
     ): void {
         $resp = null;
         try {
-            $resp = Client::fetch(
+            $client = new Client();
+            $resp = $client->fetch(
                 url: 'localhost:8000/'.$type,
                 method: Client::METHOD_GET,
-                headers: [],
                 body: [],
                 query: []
             );
@@ -156,11 +160,11 @@ final class ClientTest extends TestCase
             echo $e;
             return;
         }
-        if ($resp->getStatusCode()===200) { // If the response is OK
+        if ($resp->getStatusCode() === 200) { // If the response is OK
             $data = fopen($path, 'rb');
-            $size=filesize($path);
+            $size = filesize($path);
             if($data && $size) {
-                $contents= fread($data, $size);
+                $contents = fread($data, $size);
                 fclose($data);
                 $this->assertEquals($resp->getBody(), $contents); // Assert that the body is equal to the expected file contents
             } else {
@@ -178,10 +182,10 @@ final class ClientTest extends TestCase
     {
         $resp = null;
         try {
-            $resp = Client::fetch(
+            $client = new Client();
+            $resp = $client->fetch(
                 url: 'localhost:8000/redirect',
                 method: Client::METHOD_GET,
-                headers: [],
                 body: [],
                 query: []
             );
@@ -189,7 +193,7 @@ final class ClientTest extends TestCase
             echo $e;
             return;
         }
-        if ($resp->getStatusCode()===200) { // If the response is OK
+        if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
             $this->assertEquals($respData['page'], "redirectedPage"); // Assert that the page is the redirected page
         } else { // If the response is not OK
