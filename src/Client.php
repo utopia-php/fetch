@@ -61,70 +61,75 @@ class Client
         string $method = self::METHOD_GET,
         array $body = [],
         array $query = [],
-        int $timeout = 15
+        int $timeout = 15,
+        array $curlOptions = []
     ): Response {
         // Process the data before making the request
-        if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE ])) { // If the method is not supported
+        if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
             throw new FetchException("Unsupported HTTP method");
         }
         if(isset($headers['content-type'])) {
-            match ($headers['content-type']) { // Convert the body to the appropriate format
+            match ($headers['content-type']) {
                 self::CONTENT_TYPE_APPLICATION_JSON => $body = json_encode($body),
                 self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => $body = self::flatten($body),
                 self::CONTENT_TYPE_GRAPHQL => $body = $body[0],
                 default => $body = $body,
             };
         }
-        $headers = array_map(function ($i, $header) { // convert headers to appropriate format
+        $headers = array_map(function ($i, $header) {
             return $i . ':' . $header;
         }, array_keys($headers), $headers);
-        if($query) {  // if the request has a query string, append it to the request URI
+        if($query) {
             $url = rtrim($url, '?');
             $url .= '?' . http_build_query($query);
         }
         $responseHeaders = [];
-        // Initialize the curl session
+        
         $ch = curl_init();
-        // Set the request URI
-        curl_setopt($ch, CURLOPT_URL, $url);
-        // Set the request headers
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        // Set the request method
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-        // Set the request body
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        // Save the response headers
-        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) use (&$responseHeaders) {
-            $len = strlen($header);
-            $header = explode(':', $header, 2);
-
-            if (count($header) < 2) { // ignore invalid headers
+        $defaultCurlOptions = [
+            CURLOPT_URL => $url,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_HEADERFUNCTION => function ($curl, $header) use (&$responseHeaders) {
+                $len = strlen($header);
+                $header = explode(':', $header, 2);
+                if (count($header) < 2) {
+                    return $len;
+                }
+                $responseHeaders[strtolower(trim($header[0]))] = trim($header[1]);
                 return $len;
-            }
+            },
+            CURLOPT_CONNECTTIMEOUT => 60,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_RETURNTRANSFER => true,
+        ];
 
-            $responseHeaders[strtolower(trim($header[0]))] = trim($header[1]);
-            return $len;
-        });
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60);
-        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $responseBody = curl_exec($ch); // Execute the curl session
+        $merged = $curlOptions + $defaultCurlOptions;
+        foreach ($merged as $option => $value) {
+            curl_setopt($ch, $option, $value);
+        }
+
+        $responseBody = curl_exec($ch);
         $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
         if (curl_errno($ch)) {
             $errorMsg = curl_error($ch);
         }
+        
         curl_close($ch);
-
+        
         if (isset($errorMsg)) {
             throw new FetchException($errorMsg);
         }
+        
         $response = new Response(
             statusCode: $responseStatusCode,
             headers: $responseHeaders,
             body: $responseBody
         );
+        
         return $response;
     }
+    
 }
