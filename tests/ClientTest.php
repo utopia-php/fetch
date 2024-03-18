@@ -29,7 +29,7 @@ final class ClientTest extends TestCase
 
         try {
             $client = new Client();
-            foreach($headers as $key => $value) {
+            foreach ($headers as $key => $value) {
                 $client->addHeader($key, $value);
             }
 
@@ -46,11 +46,11 @@ final class ClientTest extends TestCase
         if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
             $this->assertEquals($respData['method'], $method); // Assert that the method is equal to the response's method
-            if($method != Client::METHOD_GET) {
-                if(empty($body)) { // if body is empty then response body should be an empty string
+            if ($method != Client::METHOD_GET) {
+                if (empty($body)) { // if body is empty then response body should be an empty string
                     $this->assertEquals($respData['body'], '');
                 } else {
-                    if($headers['content-type'] != "application/x-www-form-urlencoded") {
+                    if ($headers['content-type'] != "application/x-www-form-urlencoded") {
                         $this->assertEquals( // Assert that the body is equal to the response's body
                             $respData['body'],
                             json_encode($body) // Converting the body to JSON string
@@ -65,15 +65,15 @@ final class ClientTest extends TestCase
             ); // Assert that the args are equal to the response's args
             $respHeaders = json_decode($respData['headers'], true); // Converting the headers to array
             $host = $respHeaders['Host'];
-            if(array_key_exists('Content-Type', $respHeaders)) {
+            if (array_key_exists('Content-Type', $respHeaders)) {
                 $contentType = $respHeaders['Content-Type'];
             } else {
                 $contentType = $respHeaders['content-type'];
             }
             $contentType = explode(';', $contentType)[0];
             $this->assertEquals($host, $url); // Assert that the host is equal to the response's host
-            if(empty($headers)) {
-                if(empty($body)) {
+            if (empty($headers)) {
+                if (empty($body)) {
                     $this->assertEquals($contentType, 'application/x-www-form-urlencoded');
                 } else {
                     $this->assertEquals($contentType, 'application/json');
@@ -113,7 +113,7 @@ final class ClientTest extends TestCase
         }
         if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
-            if(isset($respData['method'])) {
+            if (isset($respData['method'])) {
                 $this->assertEquals($respData['method'], Client::METHOD_POST);
             } // Assert that the method is equal to the response's method
             $this->assertEquals($respData['url'], 'localhost:8000'); // Assert that the url is equal to the response's url
@@ -151,7 +151,7 @@ final class ClientTest extends TestCase
         try {
             $client = new Client();
             $resp = $client->fetch(
-                url: 'localhost:8000/'.$type,
+                url: 'localhost:8000/' . $type,
                 method: Client::METHOD_GET,
                 body: [],
                 query: []
@@ -163,7 +163,7 @@ final class ClientTest extends TestCase
         if ($resp->getStatusCode() === 200) { // If the response is OK
             $data = fopen($path, 'rb');
             $size = filesize($path);
-            if($data && $size) {
+            if ($data && $size) {
                 $contents = fread($data, $size);
                 fclose($data);
                 $this->assertEquals($resp->getBody(), $contents); // Assert that the body is equal to the expected file contents
@@ -200,6 +200,77 @@ final class ClientTest extends TestCase
             echo "Please configure your PHP inbuilt SERVER";
         }
     }
+
+    /**
+     * Test setting and getting the timeout.
+     * @return void
+     */
+    public function testSetGetTimeout(): void
+    {
+        $client = new Client();
+        $timeout = 10;
+
+        $client->setTimeout($timeout);
+
+        $this->assertEquals($timeout, $client->getTimeout());
+    }
+
+    /**
+     * Test setting and getting the allowRedirects flag.
+     * @return void
+     */
+    public function testSetGetAllowRedirects(): void
+    {
+        $client = new Client();
+        $allowRedirects = true;
+
+        $client->setAllowRedirects($allowRedirects);
+
+        $this->assertEquals($allowRedirects, $client->getAllowRedirects());
+    }
+
+    /**
+     * Test setting and getting the maxRedirects.
+     * @return void
+     */
+    public function testSetGetMaxRedirects(): void
+    {
+        $client = new Client();
+        $maxRedirects = 5;
+
+        $client->setMaxRedirects($maxRedirects);
+
+        $this->assertEquals($maxRedirects, $client->getMaxRedirects());
+    }
+
+    /**
+     * Test setting and getting the connectTimeout.
+     * @return void
+     */
+    public function testSetGetConnectTimeout(): void
+    {
+        $client = new Client();
+        $connectTimeout = 5;
+
+        $client->setConnectTimeout($connectTimeout);
+
+        $this->assertEquals($connectTimeout, $client->getConnectTimeout());
+    }
+
+    /**
+     * Test setting and getting the userAgent.
+     * @return void
+     */
+    public function testSetGetUserAgent(): void
+    {
+        $client = new Client();
+        $userAgent = "MyCustomUserAgent/1.0";
+
+        $client->setUserAgent($userAgent);
+
+        $this->assertEquals($userAgent, $client->getUserAgent());
+    }
+
     /**
      * Data provider for testFetch
      * @return array<string, array<mixed>>
@@ -258,12 +329,12 @@ final class ClientTest extends TestCase
     {
         return [
             'imageFile' => [
-                __DIR__.'/resources/logo.png',
+                __DIR__ . '/resources/logo.png',
                 'image/png',
                 'logo.png'
             ],
             'textFile' => [
-                __DIR__.'/resources/test.txt',
+                __DIR__ . '/resources/test.txt',
                 'text/plain',
                 'text.txt'
             ],
@@ -277,11 +348,11 @@ final class ClientTest extends TestCase
     {
         return [
             'imageFile' => [
-                __DIR__.'/resources/logo.png',
+                __DIR__ . '/resources/logo.png',
                 'image'
             ],
             'textFile' => [
-                __DIR__.'/resources/test.txt',
+                __DIR__ . '/resources/test.txt',
                 'text'
             ],
         ];
