@@ -25,25 +25,54 @@ class Client
 
     private array $headers = [];
     private array $curlOptions = [];
-
+    private int $timeout = 15;
+    private int $connectTimeout = 60;
+    private int $maxRedirects = 5;
 
     /**
-     * @param array<string, string> $headers
+     * @param string $key
+     * @param string $value
      * @return self
      */
-    public function setHeaders(array $headers): self
+    public function addHeader(string $key, string $value): self
     {
-        $this->headers = $headers;
+        $this->headers[$key] = $value;
         return $this;
     }
 
     /**
-     * @param array $curlOptions
+     * Set the request timeout.
+     * 
+     * @param int $timeout
      * @return self
      */
-    public function setCurlOptions(array $curlOptions): self
+    public function setTimeout(int $timeout): self
     {
-        $this->curlOptions = $curlOptions;
+        $this->timeout = $timeout;
+        return $this;
+    }
+
+    /**
+     * Set the maximum number of redirects.
+     * 
+     * @param int $maxRedirects
+     * @return self
+     */
+    public function setMaxRedirects(int $maxRedirects): self
+    {
+        $this->curlOptions[CURLOPT_MAXREDIRS] = $maxRedirects;
+        return $this;
+    }
+
+    /**
+     * Set the connection timeout.
+     * 
+     * @param int $connectTimeout
+     * @return self
+     */
+    public function setConnectTimeout(int $connectTimeout): self
+    {
+        $this->connectTimeout = $connectTimeout;
         return $this;
     }
 
@@ -118,7 +147,13 @@ class Client
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_POSTFIELDS => $body,
             CURLOPT_HEADERFUNCTION => function ($curl, $header) use (&$responseHeaders) {
-                // Header processing remains unchanged...
+                $len = strlen($header);
+                $header = explode(':', $header, 2);
+                if (count($header) < 2) {  // ignore invalid headers
+                    return $len;
+                }
+                $responseHeaders[strtolower(trim($header[0]))] = trim($header[1]);
+                return $len;
             },
             CURLOPT_CONNECTTIMEOUT => 60,
             CURLOPT_TIMEOUT => 15,
