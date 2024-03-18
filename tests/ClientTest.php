@@ -32,7 +32,7 @@ final class ClientTest extends TestCase
             foreach($headers as $key => $value) {
                 $client->addHeader($key, $value);
             }
-            
+
             $resp = $client->fetch(
                 url: $url,
                 method: $method,
