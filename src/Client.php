@@ -42,7 +42,7 @@ class Client
 
     /**
      * Set the request timeout.
-     * 
+     *
      * @param int $timeout
      * @return self
      */
@@ -54,7 +54,7 @@ class Client
 
     /**
      * Set whether to allow redirects.
-     * 
+     *
      * @param int $allow
      * @return self
      */
@@ -66,7 +66,7 @@ class Client
 
     /**
      * Set the maximum number of redirects.
-     * 
+     *
      * @param int $maxRedirects
      * @return self
      */
@@ -78,7 +78,7 @@ class Client
 
     /**
      * Set the connection timeout.
-     * 
+     *
      * @param int $connectTimeout
      * @return self
      */
@@ -113,7 +113,7 @@ class Client
 
     /**
      * This method is used to make a request to the server.
-     * 
+     *
      * @param string $url
      * @param string $method
      * @param array<string>|array<string, mixed> $body
@@ -179,9 +179,9 @@ class Client
         if (curl_errno($ch)) {
             $errorMsg = curl_error($ch);
         }
-        
+
         curl_close($ch);
-        
+
         if (isset($errorMsg)) {
             throw new FetchException($errorMsg);
         }
@@ -191,7 +191,7 @@ class Client
             headers: $responseHeaders,
             body: $responseBody
         );
-        
+
         return $response;
     }
 }

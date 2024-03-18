@@ -62,7 +62,7 @@ final class ResponseTest extends TestCase
     public function dataSet()
     {
         return [
-        'dummyResponse'=>[
+        'dummyResponse' => [
             '{"name":"John Doe","age":30}',
             [
               'content-type' => 'application/json'
