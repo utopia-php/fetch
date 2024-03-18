@@ -24,10 +24,10 @@ class Client
     public const CONTENT_TYPE_GRAPHQL = 'application/graphql';
 
     private array $headers = [];
-    private array $curlOptions = [];
     private int $timeout = 15;
     private int $connectTimeout = 60;
     private int $maxRedirects = 5;
+    private bool $allowRedirects = true;
 
     /**
      * @param string $key
@@ -53,6 +53,18 @@ class Client
     }
 
     /**
+     * Set whether to allow redirects.
+     * 
+     * @param int $allow
+     * @return self
+     */
+    public function setAllowRedirects(bool $allow): self
+    {
+        $this->allowRedirects = $allow;
+        return $this;
+    }
+
+    /**
      * Set the maximum number of redirects.
      * 
      * @param int $maxRedirects
@@ -60,7 +72,7 @@ class Client
      */
     public function setMaxRedirects(int $maxRedirects): self
     {
-        $this->curlOptions[CURLOPT_MAXREDIRS] = $maxRedirects;
+        $this->maxRedirects = $maxRedirects;
         return $this;
     }
 
@@ -114,12 +126,10 @@ class Client
         array $body = [],
         array $query = [],
     ): Response {
-        // Check for supported HTTP method
         if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
             throw new FetchException("Unsupported HTTP method");
         }
 
-        // Process headers and body based on content-type
         if (isset($this->headers['content-type'])) {
             $body = match ($this->headers['content-type']) {
                 self::CONTENT_TYPE_APPLICATION_JSON => json_encode($body),
@@ -129,19 +139,16 @@ class Client
             };
         }
 
-        // Convert headers to CURL format
         $formattedHeaders = array_map(function ($key, $value) {
             return $key . ':' . $value;
         }, array_keys($this->headers), $this->headers);
 
-        // Prepare URL with query parameters if any
         if ($query) {
             $url = rtrim($url, '?') . '?' . http_build_query($query);
         }
 
-        // Initialize CURL and set options
         $ch = curl_init();
-        $defaultCurlOptions = [
+        $curlOptions = [
             CURLOPT_URL => $url,
             CURLOPT_HTTPHEADER => $formattedHeaders,
             CURLOPT_CUSTOMREQUEST => $method,
@@ -155,15 +162,15 @@ class Client
                 $responseHeaders[strtolower(trim($header[0]))] = trim($header[1]);
                 return $len;
             },
-            CURLOPT_CONNECTTIMEOUT => 60,
-            CURLOPT_TIMEOUT => 15,
-            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_CONNECTTIMEOUT => $this->connectTimeout,
+            CURLOPT_TIMEOUT => $this->timeout,
+            CURLOPT_MAXREDIRS => $this->maxRedirects,
+            CURLOPT_FOLLOWLOCATION => $this->allowRedirects,
             CURLOPT_RETURNTRANSFER => true,
         ];
 
         // Merge user-defined CURL options with defaults
-        $mergedCurlOptions = $this->curlOptions + $defaultCurlOptions;
-        foreach ($mergedCurlOptions as $option => $value) {
+        foreach ($curlOptions as $option => $value) {
             curl_setopt($ch, $option, $value);
         }
 
