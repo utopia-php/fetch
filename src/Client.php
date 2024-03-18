@@ -29,6 +29,7 @@ class Client
     private int $connectTimeout = 60;
     private int $maxRedirects = 5;
     private bool $allowRedirects = true;
+    private string $userAgent = '';
 
     /**
      * @param string $key
@@ -86,6 +87,18 @@ class Client
     public function setConnectTimeout(int $connectTimeout): self
     {
         $this->connectTimeout = $connectTimeout;
+        return $this;
+    }
+
+    /**
+     * Set the user agent.
+     *
+     * @param string $userAgent
+     * @return self
+     */
+    public function setUserAgent(string $userAgent): self
+    {
+        $this->userAgent = $userAgent;
         return $this;
     }
 
@@ -169,6 +182,7 @@ class Client
             CURLOPT_MAXREDIRS => $this->maxRedirects,
             CURLOPT_FOLLOWLOCATION => $this->allowRedirects,
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERAGENT => $this->userAgent
         ];
 
         // Merge user-defined CURL options with defaults
@@ -195,5 +209,55 @@ class Client
         );
 
         return $response;
+    }
+
+    /**
+     * Get the request timeout.
+     *
+     * @return int
+     */
+    public function getTimeout(): int
+    {
+        return $this->timeout;
+    }
+
+    /**
+     * Get whether redirects are allowed.
+     *
+     * @return bool
+     */
+    public function getAllowRedirects(): bool
+    {
+        return $this->allowRedirects;
+    }
+
+    /**
+     * Get the maximum number of redirects.
+     *
+     * @return int
+     */
+    public function getMaxRedirects(): int
+    {
+        return $this->maxRedirects;
+    }
+
+    /**
+     * Get the connection timeout.
+     *
+     * @return int
+     */
+    public function getConnectTimeout(): int
+    {
+        return $this->connectTimeout;
+    }
+
+    /**
+     * Get the user agent.
+     *
+     * @return string
+     */
+    public function getUserAgent(): string
+    {
+        return $this->userAgent;
     }
 }
