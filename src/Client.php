@@ -148,6 +148,7 @@ class Client
             $url = rtrim($url, '?') . '?' . http_build_query($query);
         }
 
+        $responseHeaders = [];
         $ch = curl_init();
         $curlOptions = [
             CURLOPT_URL => $url,
