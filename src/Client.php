@@ -23,6 +23,7 @@ class Client
     public const CONTENT_TYPE_MULTIPART_FORM_DATA = 'multipart/form-data';
     public const CONTENT_TYPE_GRAPHQL = 'application/graphql';
 
+    /** @var array<string, string> headers */
     private array $headers = [];
     private int $timeout = 15;
     private int $connectTimeout = 60;
