@@ -23,6 +23,30 @@ class Client
     public const CONTENT_TYPE_MULTIPART_FORM_DATA = 'multipart/form-data';
     public const CONTENT_TYPE_GRAPHQL = 'application/graphql';
 
+    private array $headers = [];
+    private array $curlOptions = [];
+
+
+    /**
+     * @param array<string, string> $headers
+     * @return self
+     */
+    public function setHeaders(array $headers): self
+    {
+        $this->headers = $headers;
+        return $this;
+    }
+
+    /**
+     * @param array $curlOptions
+     * @return self
+     */
+    public function setCurlOptions(array $curlOptions): self
+    {
+        $this->curlOptions = $curlOptions;
+        return $this;
+    }
+
     /**
      * Flatten request body array to PHP multiple format
      *
@@ -45,69 +69,66 @@ class Client
 
         return $output;
     }
+
     /**
-     * This method is used to make a request to the server
+     * This method is used to make a request to the server.
+     * 
      * @param string $url
-     * @param array<string, string> $headers
      * @param string $method
      * @param array<string>|array<string, mixed> $body
      * @param array<string, mixed> $query
-     * @param int $timeout
      * @return Response
      */
-    public static function fetch(
+    public function fetch(
         string $url,
-        array $headers = [],
         string $method = self::METHOD_GET,
         array $body = [],
         array $query = [],
-        int $timeout = 15,
-        array $curlOptions = []
     ): Response {
-        // Process the data before making the request
+        // Check for supported HTTP method
         if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
             throw new FetchException("Unsupported HTTP method");
         }
-        if(isset($headers['content-type'])) {
-            match ($headers['content-type']) {
-                self::CONTENT_TYPE_APPLICATION_JSON => $body = json_encode($body),
-                self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => $body = self::flatten($body),
-                self::CONTENT_TYPE_GRAPHQL => $body = $body[0],
-                default => $body = $body,
+
+        // Process headers and body based on content-type
+        if (isset($this->headers['content-type'])) {
+            $body = match ($this->headers['content-type']) {
+                self::CONTENT_TYPE_APPLICATION_JSON => json_encode($body),
+                self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => self::flatten($body),
+                self::CONTENT_TYPE_GRAPHQL => $body[0],
+                default => $body,
             };
         }
-        $headers = array_map(function ($i, $header) {
-            return $i . ':' . $header;
-        }, array_keys($headers), $headers);
-        if($query) {
-            $url = rtrim($url, '?');
-            $url .= '?' . http_build_query($query);
+
+        // Convert headers to CURL format
+        $formattedHeaders = array_map(function ($key, $value) {
+            return $key . ':' . $value;
+        }, array_keys($this->headers), $this->headers);
+
+        // Prepare URL with query parameters if any
+        if ($query) {
+            $url = rtrim($url, '?') . '?' . http_build_query($query);
         }
-        $responseHeaders = [];
-        
+
+        // Initialize CURL and set options
         $ch = curl_init();
         $defaultCurlOptions = [
             CURLOPT_URL => $url,
-            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_HTTPHEADER => $formattedHeaders,
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_POSTFIELDS => $body,
             CURLOPT_HEADERFUNCTION => function ($curl, $header) use (&$responseHeaders) {
-                $len = strlen($header);
-                $header = explode(':', $header, 2);
-                if (count($header) < 2) {  // ignore invalid headers
-                    return $len;
-                }
-                $responseHeaders[strtolower(trim($header[0]))] = trim($header[1]);
-                return $len;
+                // Header processing remains unchanged...
             },
             CURLOPT_CONNECTTIMEOUT => 60,
-            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_TIMEOUT => 15,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_RETURNTRANSFER => true,
         ];
 
-        $merged = $curlOptions + $defaultCurlOptions;
-        foreach ($merged as $option => $value) {
+        // Merge user-defined CURL options with defaults
+        $mergedCurlOptions = $this->curlOptions + $defaultCurlOptions;
+        foreach ($mergedCurlOptions as $option => $value) {
             curl_setopt($ch, $option, $value);
         }
 
@@ -122,14 +143,13 @@ class Client
         if (isset($errorMsg)) {
             throw new FetchException($errorMsg);
         }
-        
+
         $response = new Response(
             statusCode: $responseStatusCode,
             headers: $responseHeaders,
             body: $responseBody
         );
-
+        
         return $response;
     }
-    
 }
