@@ -1,5 +1,5 @@
 # Utopia Fetch
-Lite & fast micro PHP library that provides a convenient and flexible way to perform HTTP requests in PHP applications. It now supports a more object-oriented approach, allowing for fine-grained control over request configuration such as timeouts, redirects, and headers.
+Lite & fast micro PHP library that provides a convenient and flexible way to perform HTTP requests in PHP applications.
 
 ## Usage
 Create an instance of the `Client` class to perform HTTP requests. The instance methods allow for setting request options like headers, timeout, connection timeout, and more.
@@ -32,8 +32,12 @@ $method = 'GET';
 $query = ['foo' => 'bar'];
 
 // Optionally set more configurations
-$client->setUserAgent('CustomUserAgent/1.0')
-       ->setTimeout(30);
+$client
+  ->setUserAgent('CustomUserAgent/1.0')
+  ->setAllowRedirects(true)
+  ->setMaxRedirects(1)
+  ->setConnectionTimeout(10)
+  ->setTimeout(30);
 
 $resp = $client->fetch(
     url: $url,
