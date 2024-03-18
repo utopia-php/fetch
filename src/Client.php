@@ -55,7 +55,7 @@ class Client
     /**
      * Set whether to allow redirects.
      *
-     * @param int $allow
+     * @param bool $allow
      * @return self
      */
     public function setAllowRedirects(bool $allow): self

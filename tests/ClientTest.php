@@ -26,11 +26,12 @@ final class ClientTest extends TestCase
         $query = []
     ): void {
         $resp = null;
+
         try {
-            $resp = Client::fetch(
+            $client = new Client();
+            $resp = $client->fetch(
                 url: $url,
                 method: $method,
-                headers: $headers,
                 body: $body,
                 query: $query
             );
@@ -92,12 +93,11 @@ final class ClientTest extends TestCase
     ): void {
         $resp = null;
         try {
-            $resp = Client::fetch(
+            $client = new Client();
+            $client->addHeader('Content-type', 'multipart/form-data');
+            $resp = $client->fetch(
                 url: 'localhost:8000',
                 method: Client::METHOD_POST,
-                headers: [
-                    'content-type' => 'multipart/form-data'
-                ],
                 body: [
                     'file' => new \CURLFile(strval(realpath($path)), $contentType, $fileName)
                 ],
@@ -145,10 +145,10 @@ final class ClientTest extends TestCase
     ): void {
         $resp = null;
         try {
-            $resp = Client::fetch(
+            $client = new Client();
+            $resp = $client->fetch(
                 url: 'localhost:8000/'.$type,
                 method: Client::METHOD_GET,
-                headers: [],
                 body: [],
                 query: []
             );
@@ -178,10 +178,10 @@ final class ClientTest extends TestCase
     {
         $resp = null;
         try {
-            $resp = Client::fetch(
+            $client = new Client();
+            $resp = $client->fetch(
                 url: 'localhost:8000/redirect',
                 method: Client::METHOD_GET,
-                headers: [],
                 body: [],
                 query: []
             );
