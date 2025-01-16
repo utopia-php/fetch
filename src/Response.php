@@ -88,7 +88,7 @@ class Response
     public function json(): mixed
     {
         $data = \json_decode($this->body, true);
-        if($data === null) { // Throw an exception if the data is null
+        if ($data === null) { // Throw an exception if the data is null
             throw new \Exception('Error decoding JSON');
         }
         return $data;
@@ -101,7 +101,7 @@ class Response
     public function blob(): string
     {
         $bin = "";
-        for($i = 0, $j = strlen($this->body); $i < $j; $i++) {
+        for ($i = 0, $j = strlen($this->body); $i < $j; $i++) {
             $bin .= decbin(ord($this->body)) . " ";
         }
         return $bin;

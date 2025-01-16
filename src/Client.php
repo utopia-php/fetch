@@ -30,6 +30,8 @@ class Client
     private int $maxRedirects = 5;
     private bool $allowRedirects = true;
     private string $userAgent = '';
+    private int $maxRetries = 0;
+    private int $retryDelay = 1000; // milliseconds
 
     /**
      * @param string $key
@@ -103,6 +105,30 @@ class Client
     }
 
     /**
+     * Set the maximum number of retries.
+     *
+     * @param int $maxRetries
+     * @return self
+     */
+    public function setMaxRetries(int $maxRetries): self
+    {
+        $this->maxRetries = $maxRetries;
+        return $this;
+    }
+
+    /**
+     * Set the retry delay.
+     *
+     * @param int $retryDelay
+     * @return self
+     */
+    public function setRetryDelay(int $retryDelay): self
+    {
+        $this->retryDelay = $retryDelay;
+        return $this;
+    }
+
+    /**
      * Flatten request body array to PHP multiple format
      *
      * @param array<mixed> $data
@@ -123,6 +149,29 @@ class Client
         }
 
         return $output;
+    }
+
+    /**
+     * Retry a callback with exponential backoff
+     *
+     * @param callable $callback
+     * @return mixed
+     * @throws \Exception
+     */
+    private function retry(callable $callback): mixed
+    {
+        $attempts = 0;
+
+        while (true) {
+            try {
+                return $callback();
+            } catch (\Exception $e) {
+                if (++$attempts >= $this->maxRetries) {
+                    throw $e;
+                }
+                usleep($this->retryDelay * 1000); // Convert milliseconds to microseconds
+            }
+        }
     }
 
     /**
@@ -190,23 +239,33 @@ class Client
             curl_setopt($ch, $option, $value);
         }
 
-        $responseBody = curl_exec($ch);
-        $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        if (curl_errno($ch)) {
-            $errorMsg = curl_error($ch);
+        $sendRequest = function () use ($ch, &$responseHeaders) {
+            $responseHeaders = [];
+
+            $responseBody = curl_exec($ch);
+            $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if (curl_errno($ch)) {
+                $errorMsg = curl_error($ch);
+            }
+
+            curl_close($ch);
+
+            if (isset($errorMsg)) {
+                throw new FetchException($errorMsg);
+            }
+
+            return new Response(
+                statusCode: $responseStatusCode,
+                headers: $responseHeaders,
+                body: $responseBody
+            );
+        };
+
+        if ($this->maxRetries > 0) {
+            $response = $this->retry($sendRequest);
+        } else {
+            $response = $sendRequest();
         }
-
-        curl_close($ch);
-
-        if (isset($errorMsg)) {
-            throw new FetchException($errorMsg);
-        }
-
-        $response = new Response(
-            statusCode: $responseStatusCode,
-            headers: $responseHeaders,
-            body: $responseBody
-        );
 
         return $response;
     }
@@ -259,5 +318,25 @@ class Client
     public function getUserAgent(): string
     {
         return $this->userAgent;
+    }
+
+    /**
+     * Get the maximum number of retries.
+     *
+     * @return int
+     */
+    public function getMaxRetries(): int
+    {
+        return $this->maxRetries;
+    }
+
+    /**
+     * Get the retry delay.
+     *
+     * @return int
+     */
+    public function getRetryDelay(): int
+    {
+        return $this->retryDelay;
     }
 }
