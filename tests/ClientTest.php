@@ -357,4 +357,65 @@ final class ClientTest extends TestCase
             ],
         ];
     }
+
+    /**
+     * Test for retry functionality
+     * @return void
+     */
+    public function testRetry(): void
+    {
+        $client = new Client();
+        $client->setMaxRetries(3);
+        $client->setRetryDelay(1000);
+
+        $this->assertEquals(3, $client->getMaxRetries());
+        $this->assertEquals(1000, $client->getRetryDelay());
+
+        $res = $client->fetch('localhost:8000/mock-retry');
+        $this->assertEquals(200, $res->getStatusCode());
+
+        unlink(__DIR__ . '/state.json');
+
+        // Test if we get a 500 error if we go under the server's max retries
+        $client->setMaxRetries(1);
+        $res = $client->fetch('localhost:8000/mock-retry');
+        $this->assertEquals(503, $res->getStatusCode());
+
+        unlink(__DIR__ . '/state.json');
+    }
+
+    /**
+     * Test if the retry delay is working
+     * @return void
+     */
+    public function testRetryWithDelay(): void
+    {
+        $client = new Client();
+        $client->setMaxRetries(3);
+        $client->setRetryDelay(3000);
+        $now = microtime(true);
+
+        $res = $client->fetch('localhost:8000/mock-retry');
+        $this->assertGreaterThan($now + 3.0, microtime(true));
+        $this->assertEquals(200, $res->getStatusCode());
+        unlink(__DIR__ . '/state.json');
+    }
+
+    /**
+     * Test custom retry status codes
+     * @return void
+     */
+    public function testCustomRetryStatusCodes(): void
+    {
+        $client = new Client();
+        $client->setMaxRetries(3);
+        $client->setRetryDelay(3000);
+        $client->setRetryStatusCodes([401]);
+        $now = microtime(true);
+
+        $res = $client->fetch('localhost:8000/mock-retry-401');
+        $this->assertEquals(200, $res->getStatusCode());
+        $this->assertGreaterThan($now + 3.0, microtime(true));
+        unlink(__DIR__ . '/state.json');
+    }
 }

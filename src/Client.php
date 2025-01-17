@@ -30,6 +30,11 @@ class Client
     private int $maxRedirects = 5;
     private bool $allowRedirects = true;
     private string $userAgent = '';
+    private int $maxRetries = 0;
+    private int $retryDelay = 1000; // milliseconds
+
+    /** @var array<int> $retryStatusCodes */
+    private array $retryStatusCodes = [500, 503];
 
     /**
      * @param string $key
@@ -103,6 +108,45 @@ class Client
     }
 
     /**
+     * Set the maximum number of retries.
+     *
+     * The client will automatically retry the request if the response status code is 500 or 503, indicating a temporary error.
+     * If the request fails after the maximum number of retries, the normal response will be returned.
+     *
+     * @param int $maxRetries
+     * @return self
+     */
+    public function setMaxRetries(int $maxRetries): self
+    {
+        $this->maxRetries = $maxRetries;
+        return $this;
+    }
+
+    /**
+     * Set the retry delay in milliseconds.
+     *
+     * @param int $retryDelay
+     * @return self
+     */
+    public function setRetryDelay(int $retryDelay): self
+    {
+        $this->retryDelay = $retryDelay;
+        return $this;
+    }
+
+    /**
+     * Set the retry status codes.
+     *
+     * @param array<int> $retryStatusCodes
+     * @return self
+     */
+    public function setRetryStatusCodes(array $retryStatusCodes): self
+    {
+        $this->retryStatusCodes = $retryStatusCodes;
+        return $this;
+    }
+
+    /**
      * Flatten request body array to PHP multiple format
      *
      * @param array<mixed> $data
@@ -123,6 +167,29 @@ class Client
         }
 
         return $output;
+    }
+
+    /**
+     * Retry a callback with exponential backoff
+     *
+     * @param callable $callback
+     * @return mixed
+     * @throws \Exception
+     */
+    private function withRetries(callable $callback): mixed
+    {
+        $attempts = 1;
+
+        while (true) {
+            $res = $callback();
+
+            if (!in_array($res->getStatusCode(), $this->retryStatusCodes) || $attempts >= $this->maxRetries) {
+                return $res;
+            }
+
+            usleep($this->retryDelay * 1000); // Convert milliseconds to microseconds
+            $attempts++;
+        }
     }
 
     /**
@@ -190,23 +257,33 @@ class Client
             curl_setopt($ch, $option, $value);
         }
 
-        $responseBody = curl_exec($ch);
-        $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        if (curl_errno($ch)) {
-            $errorMsg = curl_error($ch);
+        $sendRequest = function () use ($ch, &$responseHeaders) {
+            $responseHeaders = [];
+
+            $responseBody = curl_exec($ch);
+            $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if (curl_errno($ch)) {
+                $errorMsg = curl_error($ch);
+            }
+
+            curl_close($ch);
+
+            if (isset($errorMsg)) {
+                throw new FetchException($errorMsg);
+            }
+
+            return new Response(
+                statusCode: $responseStatusCode,
+                headers: $responseHeaders,
+                body: $responseBody
+            );
+        };
+
+        if ($this->maxRetries > 0) {
+            $response = $this->withRetries($sendRequest);
+        } else {
+            $response = $sendRequest();
         }
-
-        curl_close($ch);
-
-        if (isset($errorMsg)) {
-            throw new FetchException($errorMsg);
-        }
-
-        $response = new Response(
-            statusCode: $responseStatusCode,
-            headers: $responseHeaders,
-            body: $responseBody
-        );
 
         return $response;
     }
@@ -259,5 +336,35 @@ class Client
     public function getUserAgent(): string
     {
         return $this->userAgent;
+    }
+
+    /**
+     * Get the maximum number of retries.
+     *
+     * @return int
+     */
+    public function getMaxRetries(): int
+    {
+        return $this->maxRetries;
+    }
+
+    /**
+     * Get the retry delay.
+     *
+     * @return int
+     */
+    public function getRetryDelay(): int
+    {
+        return $this->retryDelay;
+    }
+
+    /**
+     * Get the retry status codes.
+     *
+     * @return array<int>
+     */
+    public function getRetryStatusCodes(): array
+    {
+        return $this->retryStatusCodes;
     }
 }
