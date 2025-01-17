@@ -32,6 +32,8 @@ class Client
     private string $userAgent = '';
     private int $maxRetries = 0;
     private int $retryDelay = 1000; // milliseconds
+
+    /** @var array<int> $retryStatusCodes */
     private array $retryStatusCodes = [500, 503];
 
     /**
