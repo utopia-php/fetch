@@ -107,6 +107,9 @@ class Client
     /**
      * Set the maximum number of retries.
      *
+     * The client will automatically retry the request if the response status code is 500 or 503, indicating a temporary error.
+     * If the request fails after the maximum number of retries, the normal response will be returned.
+     *
      * @param int $maxRetries
      * @return self
      */
@@ -117,7 +120,7 @@ class Client
     }
 
     /**
-     * Set the retry delay.
+     * Set the retry delay in milliseconds.
      *
      * @param int $retryDelay
      * @return self
@@ -160,17 +163,17 @@ class Client
      */
     private function retry(callable $callback): mixed
     {
-        $attempts = 0;
+        $attempts = 1;
 
         while (true) {
-            try {
-                return $callback();
-            } catch (\Exception $e) {
-                if (++$attempts >= $this->maxRetries) {
-                    throw $e;
-                }
-                usleep($this->retryDelay * 1000); // Convert milliseconds to microseconds
+            $res = $callback();
+
+            if ($res->getStatusCode() !== 500 && $res->getStatusCode() !== 503 || $attempts >= $this->maxRetries) {
+                return $res;
             }
+
+            usleep($this->retryDelay * 1000); // Convert milliseconds to microseconds
+            $attempts++;
         }
     }
 
