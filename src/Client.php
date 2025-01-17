@@ -32,6 +32,7 @@ class Client
     private string $userAgent = '';
     private int $maxRetries = 0;
     private int $retryDelay = 1000; // milliseconds
+    private array $retryStatusCodes = [500, 503];
 
     /**
      * @param string $key
@@ -132,6 +133,18 @@ class Client
     }
 
     /**
+     * Set the retry status codes.
+     *
+     * @param array<int> $retryStatusCodes
+     * @return self
+     */
+    public function setRetryStatusCodes(array $retryStatusCodes): self
+    {
+        $this->retryStatusCodes = $retryStatusCodes;
+        return $this;
+    }
+
+    /**
      * Flatten request body array to PHP multiple format
      *
      * @param array<mixed> $data
@@ -161,14 +174,14 @@ class Client
      * @return mixed
      * @throws \Exception
      */
-    private function retry(callable $callback): mixed
+    private function withRetries(callable $callback): mixed
     {
         $attempts = 1;
 
         while (true) {
             $res = $callback();
 
-            if ($res->getStatusCode() !== 500 && $res->getStatusCode() !== 503 || $attempts >= $this->maxRetries) {
+            if (!in_array($res->getStatusCode(), $this->retryStatusCodes) || $attempts >= $this->maxRetries) {
                 return $res;
             }
 
@@ -265,7 +278,7 @@ class Client
         };
 
         if ($this->maxRetries > 0) {
-            $response = $this->retry($sendRequest);
+            $response = $this->withRetries($sendRequest);
         } else {
             $response = $sendRequest();
         }
@@ -341,5 +354,15 @@ class Client
     public function getRetryDelay(): int
     {
         return $this->retryDelay;
+    }
+
+    /**
+     * Get the retry status codes.
+     *
+     * @return array<int>
+     */
+    public function getRetryStatusCodes(): array
+    {
+        return $this->retryStatusCodes;
     }
 }

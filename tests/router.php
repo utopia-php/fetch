@@ -71,6 +71,20 @@ if ($curPageName == 'image') {
         'success' => true,
         'attempts' => $state['attempts']
     ]);
+} elseif ($curPageName == 'mock-retry-401') {
+    $state = getState();
+    $state['attempts'] = isset($state['attempts']) ? $state['attempts'] + 1 : 1;
+    setState($state);
+
+    if ($state['attempts'] <= 2) {
+        http_response_code(401);
+        throw new \Exception('Mock retry error');
+    }
+
+    $body = json_encode([
+        'success' => true,
+        'attempts' => $state['attempts']
+    ]);
 }
 $resp = [
   'method' => $method,

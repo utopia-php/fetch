@@ -400,4 +400,22 @@ final class ClientTest extends TestCase
         $this->assertEquals(200, $res->getStatusCode());
         unlink(__DIR__ . '/state.json');
     }
+
+    /**
+     * Test custom retry status codes
+     * @return void
+     */
+    public function testCustomRetryStatusCodes(): void
+    {
+        $client = new Client();
+        $client->setMaxRetries(3);
+        $client->setRetryDelay(3000);
+        $client->setRetryStatusCodes([401]);
+        $now = microtime(true);
+
+        $res = $client->fetch('localhost:8000/mock-retry-401');
+        $this->assertEquals(200, $res->getStatusCode());
+        $this->assertGreaterThan($now + 3.0, microtime(true));
+        unlink(__DIR__ . '/state.json');
+    }
 }
