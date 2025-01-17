@@ -9,16 +9,31 @@ $files = $_FILES; // Get the request files
 
 $stateFile = __DIR__ . '/state.json';
 
-function getState()
+/**
+ * Get the state from the state file
+ * @return array<string, mixed>
+ */
+function getState(): array
 {
     global $stateFile;
     if (file_exists($stateFile)) {
-        return json_decode(file_get_contents($stateFile), true) ?? [];
+        $data = file_get_contents($stateFile);
+
+        if ($data === false) {
+            throw new \Exception('Failed to read state file');
+        }
+
+        return json_decode($data, true) ?? [];
     }
     return [];
 }
 
-function setState($newState)
+/**
+ * Set the state to the state file
+ * @param array<string, mixed> $newState
+ * @return void
+ */
+function setState(array $newState): void
 {
     global $stateFile;
     file_put_contents($stateFile, json_encode($newState, JSON_PRETTY_PRINT));
