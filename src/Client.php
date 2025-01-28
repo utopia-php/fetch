@@ -140,7 +140,7 @@ class Client
      * @param array $data
      * @return string
      */
-    public function jsonEncode(array $data): string
+    private function jsonEncode(array $data): string
     {
 
         if(!empty($this->jsonEncodeFlags)) {
