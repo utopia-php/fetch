@@ -213,7 +213,7 @@ class Client
 
         if (isset($this->headers['content-type']) && $body !== null) {
             $body = match ($this->headers['content-type']) {
-                self::CONTENT_TYPE_APPLICATION_JSON => json_encode($body),
+                self::CONTENT_TYPE_APPLICATION_JSON => json_encode($body,JSON_UNESCAPED_SLASHES),
                 self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => self::flatten($body),
                 self::CONTENT_TYPE_GRAPHQL => $body[0],
                 default => $body,
