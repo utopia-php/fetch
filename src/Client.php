@@ -204,14 +204,14 @@ class Client
     public function fetch(
         string $url,
         string $method = self::METHOD_GET,
-        array $body = [],
-        array $query = [],
+        ?array $body = [],
+        ?array $query = [],
     ): Response {
         if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
             throw new FetchException("Unsupported HTTP method");
         }
 
-        if (isset($this->headers['content-type'])) {
+        if (isset($this->headers['content-type']) && $body !== null) {
             $body = match ($this->headers['content-type']) {
                 self::CONTENT_TYPE_APPLICATION_JSON => json_encode($body),
                 self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => self::flatten($body),
