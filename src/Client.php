@@ -178,7 +178,7 @@ class Client
      * @param array<string, mixed> $query
      * @param ?callable $chunks Optional callback function that receives a Chunk object
      * @return Response
-     * @throws FetchException
+     * @throws Exception
      */
     public function fetch(
         string $url,
