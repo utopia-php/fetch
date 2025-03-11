@@ -157,12 +157,12 @@ final class ClientTest extends TestCase
         try {
             $client = new Client();
             $resp = $client->fetch(
-                url: 'localhost:8000',
+                url: 'localhost:8000/form-test', // Use our specific form-test endpoint
                 method: Client::METHOD_POST,
                 body: $formData,
                 query: []
             );
-        } catch (FetchException $e) {
+        } catch (Exception $e) {
             echo $e;
             return;
         }

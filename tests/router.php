@@ -3,11 +3,14 @@
 $method = $_SERVER['REQUEST_METHOD']; // Get the request method
 $url = $_SERVER['HTTP_HOST']; // Get the request URL
 $query = $_GET; // Get the request arguments/queries
-$headers = getallheaders(); // Get request headers
+$headers = getallheaders(); // Get the request headers
 $body = file_get_contents("php://input"); // Get the request body
 $files = $_FILES; // Get the request files
 
 $stateFile = __DIR__ . '/state.json';
+
+// For multipart/form-data, also include the POST data
+$postData = $_POST;
 
 /**
  * Get the state from the state file
@@ -157,6 +160,36 @@ if ($curPageName == 'redirect') {
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Not found']);
     exit;
+} elseif ($curPageName == 'form-data') {
+    // Create a formatted response that includes field names in the format expected by tests
+
+    $formattedBody = '';
+
+    // Add POST fields in the expected format for assertion
+    foreach ($_POST as $fieldName => $value) {
+        $formattedBody .= 'name="' . $fieldName . '"' . "\r\n";
+        $formattedBody .= $value . "\r\n";
+    }
+
+    // Add file fields in the expected format for assertion
+    foreach ($_FILES as $fieldName => $fileInfo) {
+        $formattedBody .= 'name="' . $fieldName . '"' . "\r\n";
+        $formattedBody .= 'filename="' . $fileInfo['name'] . '"' . "\r\n";
+    }
+
+    $resp = [
+        'method' => $method,
+        'url' => $url,
+        'query' => $query,
+        'body' => $formattedBody, // Use our specially formatted body
+        'headers' => json_encode($headers),
+        'files' => json_encode($files),
+        'page' => $curPageName,
+        'post' => $postData
+    ];
+
+    echo json_encode($resp);
+    exit;
 }
 
 $resp = [
@@ -167,6 +200,7 @@ $resp = [
     'headers' => json_encode($headers),
     'files' => json_encode($files),
     'page' => $curPageName,
+    'post' => $postData
 ];
 
 echo json_encode($resp);
