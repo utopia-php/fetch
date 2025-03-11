@@ -48,15 +48,6 @@ final class FormDataTest extends TestCase
     {
         $filePath = __DIR__ . '/resources/test.txt';
 
-        // Create a test file if it doesn't exist
-        if (!file_exists($filePath)) {
-            $dir = dirname($filePath);
-            if (!is_dir($dir)) {
-                mkdir($dir, 0777, true);
-            }
-            file_put_contents($filePath, 'Test file content');
-        }
-
         $formData = new FormData();
         $formData->addFile('file', $filePath);
 
@@ -64,7 +55,8 @@ final class FormDataTest extends TestCase
 
         $this->assertStringContainsString('Content-Disposition: form-data; name="file"; filename="test.txt"', $body);
         $this->assertStringContainsString('Content-Type: text/plain', $body);
-        $this->assertStringContainsString('Test file content', $body);
+        $this->assertStringContainsString('Lorem ipsum dolor sit amet', $body);
+        $this->assertStringContainsString('Vestibulum tempus sit amet purus et congue.', $body);
     }
 
     /**
@@ -95,7 +87,7 @@ final class FormDataTest extends TestCase
     {
         $formData = new FormData();
         $formData->setBoundary('custom-boundary');
-        $formData->addField('name', 'John Doe');
+        $formData->addContent('file', 'Custom file content', 'custom.txt', 'text/plain');
 
         $body = $formData->build();
 
