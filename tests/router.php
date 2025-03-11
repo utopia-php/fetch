@@ -44,8 +44,7 @@ $curPageName = substr($_SERVER['REQUEST_URI'], strrpos($_SERVER['REQUEST_URI'], 
 if ($curPageName == 'redirect') {
     header('Location: http://localhost:8000/redirectedPage');
     exit;
-}
-if ($curPageName == 'image') {
+} elseif ($curPageName == 'image') {
     $filename = __DIR__."/resources/logo.png";
     header("Content-disposition: attachment;filename=$filename");
     header("Content-type: application/octet-stream");
@@ -85,15 +84,59 @@ if ($curPageName == 'image') {
         'success' => true,
         'attempts' => $state['attempts']
     ]);
+} elseif ($curPageName == 'chunked') {
+    // Set headers for chunked response
+    header('Content-Type: text/plain');
+    header('Transfer-Encoding: chunked');
+    
+    // Send chunks with delay
+    $chunks = [
+        "This is the first chunk\n",
+        "This is the second chunk\n",
+        "This is the final chunk\n"
+    ];
+    
+    foreach ($chunks as $chunk) {
+        echo $chunk;
+        flush();
+        usleep(100000); // 100ms delay between chunks
+    }
+    
+    exit;
+} elseif ($curPageName == 'chunked-json') {
+    // Set headers for chunked JSON response
+    header('Content-Type: application/json');
+    header('Transfer-Encoding: chunked');
+    
+    // Send JSON chunks
+    $chunks = [
+        json_encode(['chunk' => 1, 'data' => 'First chunk']),
+        json_encode(['chunk' => 2, 'data' => 'Second chunk']),
+        json_encode(['chunk' => 3, 'data' => 'Final chunk'])
+    ];
+    
+    foreach ($chunks as $chunk) {
+        echo $chunk . "\n"; // Add newline for JSON lines format
+        flush();
+        usleep(100000); // 100ms delay between chunks
+    }
+    
+    exit;
+} elseif ($curPageName == 'error') {
+    http_response_code(404);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Not found']);
+    exit;
 }
+
 $resp = [
-  'method' => $method,
-  'url' => $url,
-  'query' => $query,
-  'body' => $body,
-  'headers' => json_encode($headers),
-  'files' => json_encode($files),
-  'page' => $curPageName,
+    'method' => $method,
+    'url' => $url,
+    'query' => $query,
+    'body' => $body,
+    'headers' => json_encode($headers),
+    'files' => json_encode($files),
+    'page' => $curPageName,
 ];
 
 echo json_encode($resp);
