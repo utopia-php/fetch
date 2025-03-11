@@ -97,11 +97,13 @@ if ($curPageName == 'redirect') {
     ];
 
     foreach ($chunks as $chunk) {
-        echo $chunk;
+        printf("%x\r\n%s\r\n", strlen($chunk), $chunk);
         flush();
         usleep(100000); // 100ms delay between chunks
     }
 
+    // Send the final empty chunk to indicate the end of the response
+    echo "0\r\n\r\n";
     exit;
 } elseif ($curPageName == 'chunked-json') {
     // Set headers for chunked JSON response
@@ -116,11 +118,39 @@ if ($curPageName == 'redirect') {
     ];
 
     foreach ($chunks as $chunk) {
-        echo $chunk . "\n"; // Add newline for JSON lines format
+        $chunk .= "\n"; // Add newline for JSON lines format
+        printf("%x\r\n%s\r\n", strlen($chunk), $chunk);
         flush();
         usleep(100000); // 100ms delay between chunks
     }
 
+    // Send the final empty chunk to indicate the end of the response
+    echo "0\r\n\r\n";
+    exit;
+} elseif ($curPageName == 'chunked-error') {
+    // Set error status code
+    http_response_code(400);
+    
+    // Set headers for chunked JSON response
+    header('Content-Type: application/json');
+    header('Transfer-Encoding: chunked');
+
+    // Send JSON chunks with error details
+    $chunks = [
+        json_encode(['error' => 'Validation error', 'field' => 'username']),
+        json_encode(['error' => 'Additional details', 'context' => 'Form submission']),
+        json_encode(['error' => 'Final error message', 'code' => 'INVALID_INPUT'])
+    ];
+
+    foreach ($chunks as $chunk) {
+        $chunk .= "\n"; // Add newline for JSON lines format
+        printf("%x\r\n%s\r\n", strlen($chunk), $chunk);
+        flush();
+        usleep(100000); // 100ms delay between chunks
+    }
+
+    // Send the final empty chunk to indicate the end of the response
+    echo "0\r\n\r\n";
     exit;
 } elseif ($curPageName == 'error') {
     http_response_code(404);

@@ -513,4 +513,48 @@ final class ClientTest extends TestCase
         }
         $this->assertEquals(404, $response->getStatusCode());
     }
+
+    /**
+     * Test chunk handling with chunked error response
+     * @return void
+     */
+    public function testChunkHandlingWithChunkedError(): void
+    {
+        $client = new Client();
+        $client->addHeader('content-type', 'application/json');
+        $chunks = [];
+        $errorMessages = [];
+
+        $response = $client->fetch(
+            url: 'localhost:8000/chunked-error',
+            method: Client::METHOD_GET,
+            chunks: function (Chunk $chunk) use (&$chunks, &$errorMessages) {
+                $chunks[] = $chunk;
+                $data = json_decode($chunk->getData(), true);
+                if ($data && isset($data['error'])) {
+                    $errorMessages[] = $data['error'];
+                }
+            }
+        );
+
+        // Verify response status code
+        $this->assertEquals(400, $response->getStatusCode());
+
+        // Verify we received chunks
+        $this->assertCount(3, $chunks);
+
+        // Verify error messages were received in order
+        $this->assertEquals([
+            'Validation error',
+            'Additional details',
+            'Final error message'
+        ], $errorMessages);
+
+        // Test the content of specific chunks
+        $firstChunk = json_decode($chunks[0]->getData(), true);
+        $this->assertEquals('username', $firstChunk['field']);
+
+        $lastChunk = json_decode($chunks[2]->getData(), true);
+        $this->assertEquals('INVALID_INPUT', $lastChunk['code']);
+    }
 }
