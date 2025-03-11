@@ -25,7 +25,7 @@ class Chunk
 
     /**
      * Get the raw chunk data
-     * 
+     *
      * @return string
      */
     public function getData(): string
@@ -35,7 +35,7 @@ class Chunk
 
     /**
      * Get the size of the chunk in bytes
-     * 
+     *
      * @return int
      */
     public function getSize(): int
@@ -45,7 +45,7 @@ class Chunk
 
     /**
      * Get the timestamp when the chunk was received
-     * 
+     *
      * @return float
      */
     public function getTimestamp(): float
@@ -55,11 +55,11 @@ class Chunk
 
     /**
      * Get the sequential index of this chunk
-     * 
+     *
      * @return int
      */
     public function getIndex(): int
     {
         return $this->index;
     }
-} 
+}

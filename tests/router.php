@@ -88,39 +88,39 @@ if ($curPageName == 'redirect') {
     // Set headers for chunked response
     header('Content-Type: text/plain');
     header('Transfer-Encoding: chunked');
-    
+
     // Send chunks with delay
     $chunks = [
         "This is the first chunk\n",
         "This is the second chunk\n",
         "This is the final chunk\n"
     ];
-    
+
     foreach ($chunks as $chunk) {
         echo $chunk;
         flush();
         usleep(100000); // 100ms delay between chunks
     }
-    
+
     exit;
 } elseif ($curPageName == 'chunked-json') {
     // Set headers for chunked JSON response
     header('Content-Type: application/json');
     header('Transfer-Encoding: chunked');
-    
+
     // Send JSON chunks
     $chunks = [
         json_encode(['chunk' => 1, 'data' => 'First chunk']),
         json_encode(['chunk' => 2, 'data' => 'Second chunk']),
         json_encode(['chunk' => 3, 'data' => 'Final chunk'])
     ];
-    
+
     foreach ($chunks as $chunk) {
         echo $chunk . "\n"; // Add newline for JSON lines format
         flush();
         usleep(100000); // 100ms delay between chunks
     }
-    
+
     exit;
 } elseif ($curPageName == 'error') {
     http_response_code(404);

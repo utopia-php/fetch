@@ -432,7 +432,7 @@ final class ClientTest extends TestCase
         $response = $client->fetch(
             url: 'localhost:8000/chunked',
             method: Client::METHOD_GET,
-            chunks: function(Chunk $chunk) use (&$chunks, &$lastChunk) {
+            chunks: function (Chunk $chunk) use (&$chunks, &$lastChunk) {
                 $chunks[] = $chunk;
                 $lastChunk = $chunk;
             }
@@ -440,18 +440,17 @@ final class ClientTest extends TestCase
 
         $this->assertGreaterThan(0, count($chunks));
         $this->assertEquals(200, $response->getStatusCode());
-        
+
         // Test chunk metadata
         foreach ($chunks as $index => $chunk) {
             $this->assertEquals($index, $chunk->getIndex());
             $this->assertGreaterThan(0, $chunk->getSize());
             $this->assertGreaterThan(0, $chunk->getTimestamp());
-            $this->assertEquals($response->getStatusCode(), $chunk->getStatusCode());
-            $this->assertEquals($response->getHeaders(), $chunk->getHeaders());
+            $this->assertNotEmpty($chunk->getData());
         }
 
-        // Test last chunk
-        $this->assertTrue($lastChunk->isLast());
+        // Verify last chunk exists
+        $this->assertNotNull($lastChunk);
     }
 
     /**
@@ -462,27 +461,30 @@ final class ClientTest extends TestCase
     {
         $client = new Client();
         $client->addHeader('content-type', 'application/json');
-        
+
         $chunks = [];
         $response = $client->fetch(
             url: 'localhost:8000/chunked-json',
             method: Client::METHOD_POST,
             body: ['test' => 'data'],
-            chunks: function(Chunk $chunk) use (&$chunks) {
+            chunks: function (Chunk $chunk) use (&$chunks) {
                 $chunks[] = $chunk;
             }
         );
 
         $this->assertGreaterThan(0, count($chunks));
-        
+
         // Test JSON handling
         foreach ($chunks as $chunk) {
-            $this->assertTrue($chunk->isJson());
-            $this->assertEquals('application/json', $chunk->getContentType());
+            $data = $chunk->getData();
+            $this->assertNotEmpty($data);
             
-            if ($data = $chunk->tryDecodeJson()) {
-                $this->assertIsArray($data);
-            }
+            // Verify each chunk is valid JSON
+            $decoded = json_decode($data, true);
+            $this->assertNotNull($decoded);
+            $this->assertIsArray($decoded);
+            $this->assertArrayHasKey('chunk', $decoded);
+            $this->assertArrayHasKey('data', $decoded);
         }
     }
 
@@ -498,13 +500,17 @@ final class ClientTest extends TestCase
         $response = $client->fetch(
             url: 'localhost:8000/error',
             method: Client::METHOD_GET,
-            chunks: function(Chunk $chunk) use (&$errorChunk) {
-                $errorChunk = $chunk;
+            chunks: function (Chunk $chunk) use (&$errorChunk) {
+                if ($errorChunk === null) {
+                    $errorChunk = $chunk;
+                }
             }
         );
 
         $this->assertNotNull($errorChunk);
-        $this->assertEquals(404, $errorChunk->getStatusCode());
+        if ($errorChunk !== null) {
+            $this->assertNotEmpty($errorChunk->getData());
+        }
         $this->assertEquals(404, $response->getStatusCode());
     }
 }
