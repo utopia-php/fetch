@@ -478,7 +478,7 @@ final class ClientTest extends TestCase
         foreach ($chunks as $chunk) {
             $data = $chunk->getData();
             $this->assertNotEmpty($data);
-            
+
             // Verify each chunk is valid JSON
             $decoded = json_decode($data, true);
             $this->assertNotNull($decoded);
