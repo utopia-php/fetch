@@ -2,7 +2,7 @@
 
 namespace Utopia\Fetch;
 
-class FetchException extends \Exception
+class Exception extends \Exception
 {
     /**
      * Constructor
