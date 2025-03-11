@@ -66,7 +66,7 @@ class FormData
         array $headers = []
     ): self {
         if (!file_exists($filePath) || !is_readable($filePath)) {
-            throw new FetchException("File doesn't exist or isn't readable: {$filePath}");
+            throw new Exception("File doesn't exist or isn't readable: {$filePath}");
         }
 
         $this->files[] = [
