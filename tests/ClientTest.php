@@ -39,7 +39,7 @@ final class ClientTest extends TestCase
                 body: $body,
                 query: $query
             );
-        } catch (FetchException $e) {
+        } catch (Exception $e) {
             echo $e;
             return;
         }
@@ -108,7 +108,7 @@ final class ClientTest extends TestCase
                 ],
                 query: []
             );
-        } catch (FetchException $e) {
+        } catch (Exception $e) {
             echo $e;
             return;
         }
@@ -225,7 +225,7 @@ final class ClientTest extends TestCase
                 body: [],
                 query: []
             );
-        } catch (FetchException $e) {
+        } catch (Exception $e) {
             echo $e;
             return;
         }
@@ -259,7 +259,7 @@ final class ClientTest extends TestCase
                 body: [],
                 query: []
             );
-        } catch (FetchException $e) {
+        } catch (Exception $e) {
             echo $e;
             return;
         }
@@ -339,67 +339,6 @@ final class ClientTest extends TestCase
         $client->setUserAgent($userAgent);
 
         $this->assertEquals($userAgent, $client->getUserAgent());
-    }
-
-    /**
-     * Test for retry functionality
-     * @return void
-     */
-    public function testRetry(): void
-    {
-        $client = new Client();
-        $client->setMaxRetries(3);
-        $client->setRetryDelay(1000);
-
-        $this->assertEquals(3, $client->getMaxRetries());
-        $this->assertEquals(1000, $client->getRetryDelay());
-
-        $res = $client->fetch('localhost:8000/mock-retry');
-        $this->assertEquals(200, $res->getStatusCode());
-
-        unlink(__DIR__ . '/state.json');
-
-        // Test if we get a 500 error if we go under the server's max retries
-        $client->setMaxRetries(1);
-        $res = $client->fetch('localhost:8000/mock-retry');
-        $this->assertEquals(503, $res->getStatusCode());
-
-        unlink(__DIR__ . '/state.json');
-    }
-
-    /**
-     * Test if the retry delay is working
-     * @return void
-     */
-    public function testRetryWithDelay(): void
-    {
-        $client = new Client();
-        $client->setMaxRetries(3);
-        $client->setRetryDelay(3000);
-        $now = microtime(true);
-
-        $res = $client->fetch('localhost:8000/mock-retry');
-        $this->assertGreaterThan($now + 3.0, microtime(true));
-        $this->assertEquals(200, $res->getStatusCode());
-        unlink(__DIR__ . '/state.json');
-    }
-
-    /**
-     * Test custom retry status codes
-     * @return void
-     */
-    public function testCustomRetryStatusCodes(): void
-    {
-        $client = new Client();
-        $client->setMaxRetries(3);
-        $client->setRetryDelay(3000);
-        $client->setRetryStatusCodes([401]);
-        $now = microtime(true);
-
-        $res = $client->fetch('localhost:8000/mock-retry-401');
-        $this->assertEquals(200, $res->getStatusCode());
-        $this->assertGreaterThan($now + 3.0, microtime(true));
-        unlink(__DIR__ . '/state.json');
     }
 
     /**
@@ -608,5 +547,204 @@ final class ClientTest extends TestCase
                 'text'
             ],
         ];
+    }
+
+    /**
+     * Test for retry functionality
+     * @return void
+     */
+    public function testRetry(): void
+    {
+        $client = new Client();
+        $client->setMaxRetries(3);
+        $client->setRetryDelay(1000);
+
+        $this->assertEquals(3, $client->getMaxRetries());
+        $this->assertEquals(1000, $client->getRetryDelay());
+
+        $res = $client->fetch('localhost:8000/mock-retry');
+        $this->assertEquals(200, $res->getStatusCode());
+
+        unlink(__DIR__ . '/state.json');
+
+        // Test if we get a 500 error if we go under the server's max retries
+        $client->setMaxRetries(1);
+        $res = $client->fetch('localhost:8000/mock-retry');
+        $this->assertEquals(503, $res->getStatusCode());
+
+        unlink(__DIR__ . '/state.json');
+    }
+
+    /**
+     * Test if the retry delay is working
+     * @return void
+     */
+    public function testRetryWithDelay(): void
+    {
+        $client = new Client();
+        $client->setMaxRetries(3);
+        $client->setRetryDelay(3000);
+        $now = microtime(true);
+
+        $res = $client->fetch('localhost:8000/mock-retry');
+        $this->assertGreaterThan($now + 3.0, microtime(true));
+        $this->assertEquals(200, $res->getStatusCode());
+        unlink(__DIR__ . '/state.json');
+    }
+
+    /**
+     * Test custom retry status codes
+     * @return void
+     */
+    public function testCustomRetryStatusCodes(): void
+    {
+        $client = new Client();
+        $client->setMaxRetries(3);
+        $client->setRetryDelay(3000);
+        $client->setRetryStatusCodes([401]);
+        $now = microtime(true);
+
+        $res = $client->fetch('localhost:8000/mock-retry-401');
+        $this->assertEquals(200, $res->getStatusCode());
+        $this->assertGreaterThan($now + 3.0, microtime(true));
+        unlink(__DIR__ . '/state.json');
+    }
+
+    /**
+     * Test for chunk handling
+     * @return void
+     */
+    public function testChunkHandling(): void
+    {
+        $client = new Client();
+        $chunks = [];
+        $lastChunk = null;
+
+        $response = $client->fetch(
+            url: 'localhost:8000/chunked',
+            method: Client::METHOD_GET,
+            chunks: function (Chunk $chunk) use (&$chunks, &$lastChunk) {
+                $chunks[] = $chunk;
+                $lastChunk = $chunk;
+            }
+        );
+
+        $this->assertGreaterThan(0, count($chunks));
+        $this->assertEquals(200, $response->getStatusCode());
+
+        // Test chunk metadata
+        foreach ($chunks as $index => $chunk) {
+            $this->assertEquals($index, $chunk->getIndex());
+            $this->assertGreaterThan(0, $chunk->getSize());
+            $this->assertGreaterThan(0, $chunk->getTimestamp());
+            $this->assertNotEmpty($chunk->getData());
+        }
+
+        // Verify last chunk exists
+        $this->assertNotNull($lastChunk);
+    }
+
+    /**
+     * Test chunk handling with JSON response
+     * @return void
+     */
+    public function testChunkHandlingWithJson(): void
+    {
+        $client = new Client();
+        $client->addHeader('content-type', 'application/json');
+
+        $chunks = [];
+        $response = $client->fetch(
+            url: 'localhost:8000/chunked-json',
+            method: Client::METHOD_POST,
+            body: ['test' => 'data'],
+            chunks: function (Chunk $chunk) use (&$chunks) {
+                $chunks[] = $chunk;
+            }
+        );
+
+        $this->assertGreaterThan(0, count($chunks));
+
+        // Test JSON handling
+        foreach ($chunks as $chunk) {
+            $data = $chunk->getData();
+            $this->assertNotEmpty($data);
+
+            // Verify each chunk is valid JSON
+            $decoded = json_decode($data, true);
+            $this->assertNotNull($decoded);
+            $this->assertIsArray($decoded);
+            $this->assertArrayHasKey('chunk', $decoded);
+            $this->assertArrayHasKey('data', $decoded);
+        }
+    }
+
+    /**
+     * Test chunk handling with error response
+     * @return void
+     */
+    public function testChunkHandlingWithError(): void
+    {
+        $client = new Client();
+        $errorChunk = null;
+
+        $response = $client->fetch(
+            url: 'localhost:8000/error',
+            method: Client::METHOD_GET,
+            chunks: function (Chunk $chunk) use (&$errorChunk) {
+                if ($errorChunk === null) {
+                    $errorChunk = $chunk;
+                }
+            }
+        );
+
+        $this->assertNotNull($errorChunk);
+        if ($errorChunk !== null) {
+            $this->assertNotEmpty($errorChunk->getData());
+        }
+        $this->assertEquals(404, $response->getStatusCode());
+    }
+
+    /**
+     * Test chunk handling with chunked error response
+     * @return void
+     */
+    public function testChunkHandlingWithChunkedError(): void
+    {
+        $client = new Client();
+        $client->addHeader('content-type', 'application/json');
+        $chunks = [];
+        $errorMessages = [];
+
+        $response = $client->fetch(
+            url: 'localhost:8000/chunked-error',
+            method: Client::METHOD_GET,
+            chunks: function (Chunk $chunk) use (&$chunks, &$errorMessages) {
+                $chunks[] = $chunk;
+                $data = json_decode($chunk->getData(), true);
+                if ($data && isset($data['error'])) {
+                    $errorMessages[] = $data['error'];
+                }
+            }
+        );
+
+        // Verify response status code
+        $this->assertEquals(400, $response->getStatusCode());
+
+        // Verify we received chunks
+        $this->assertCount(3, $chunks);
+
+        // Verify error messages were received in order
+        $this->assertEquals([
+            'Validation error',
+            'Additional details',
+            'Final error message'
+        ], $errorMessages);
+
+        // Test the content of specific chunks
+        $this->assertArrayHasKey(0, $chunks);
+        $firstChunk = json_decode($chunks[0]->getData(), true);
+        $this->assertIsArray($firstChunk);
+        $this->assertEquals('username', $firstChunk['field']);
     }
 }

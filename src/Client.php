@@ -175,7 +175,8 @@ class Client
      * @param string $url
      * @param string $method
      * @param array<string>|array<string, mixed>|FormData|null $body
-     * @param array<string>|array<string, mixed>|null $query
+     * @param array<string, mixed> $query
+     * @param ?callable $chunks Optional callback function that receives a Chunk object
      * @return Response
      * @throws FetchException
      */
@@ -184,9 +185,10 @@ class Client
         string $method = self::METHOD_GET,
         mixed $body = [],
         ?array $query = [],
+        ?callable $chunks = null,
     ): Response {
         if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
-            throw new FetchException("Unsupported HTTP method");
+            throw new Exception("Unsupported HTTP method");
         }
 
         if ($body !== null) {
@@ -211,6 +213,8 @@ class Client
         }
 
         $responseHeaders = [];
+        $responseBody = '';
+        $chunkIndex = 0;
         $ch = curl_init();
         $curlOptions = [
             CURLOPT_URL => $url,
@@ -226,11 +230,24 @@ class Client
                 $responseHeaders[strtolower(trim($header[0]))] = trim($header[1]);
                 return $len;
             },
+            CURLOPT_WRITEFUNCTION => function ($ch, $data) use ($chunks, &$responseBody, &$chunkIndex) {
+                if ($chunks !== null) {
+                    $chunk = new Chunk(
+                        data: $data,
+                        size: strlen($data),
+                        timestamp: microtime(true),
+                        index: $chunkIndex++
+                    );
+                    $chunks($chunk);
+                } else {
+                    $responseBody .= $data;
+                }
+                return strlen($data);
+            },
             CURLOPT_CONNECTTIMEOUT => $this->connectTimeout,
             CURLOPT_TIMEOUT => $this->timeout,
             CURLOPT_MAXREDIRS => $this->maxRedirects,
             CURLOPT_FOLLOWLOCATION => $this->allowRedirects,
-            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_USERAGENT => $this->userAgent
         ];
 
@@ -239,20 +256,18 @@ class Client
             curl_setopt($ch, $option, $value);
         }
 
-        $sendRequest = function () use ($ch, &$responseHeaders) {
+        $sendRequest = function () use ($ch, &$responseHeaders, &$responseBody) {
             $responseHeaders = [];
 
-            $responseBody = curl_exec($ch);
-            $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            if (curl_errno($ch)) {
+            $success = curl_exec($ch);
+            if ($success === false) {
                 $errorMsg = curl_error($ch);
+                curl_close($ch);
+                throw new Exception($errorMsg);
             }
 
+            $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-
-            if (isset($errorMsg)) {
-                throw new FetchException($errorMsg);
-            }
 
             return new Response(
                 statusCode: $responseStatusCode,
