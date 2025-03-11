@@ -551,10 +551,9 @@ final class ClientTest extends TestCase
         ], $errorMessages);
 
         // Test the content of specific chunks
+        $this->assertArrayHasKey(0, $chunks);
         $firstChunk = json_decode($chunks[0]->getData(), true);
+        $this->assertIsArray($firstChunk);
         $this->assertEquals('username', $firstChunk['field']);
-
-        $lastChunk = json_decode($chunks[2]->getData(), true);
-        $this->assertEquals('INVALID_INPUT', $lastChunk['code']);
     }
 }

@@ -130,7 +130,7 @@ if ($curPageName == 'redirect') {
 } elseif ($curPageName == 'chunked-error') {
     // Set error status code
     http_response_code(400);
-    
+
     // Set headers for chunked JSON response
     header('Content-Type: application/json');
     header('Transfer-Encoding: chunked');
