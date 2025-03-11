@@ -147,29 +147,6 @@ class Client
     }
 
     /**
-     * Flatten request body array to PHP multiple format
-     *
-     * @param array<mixed> $data
-     * @param string $prefix
-     * @return array<mixed>
-     */
-    private static function flatten(array $data, string $prefix = ''): array
-    {
-        $output = [];
-        foreach ($data as $key => $value) {
-            $finalKey = $prefix ? "{$prefix}[{$key}]" : $key;
-
-            if (is_array($value)) {
-                $output += self::flatten($value, $finalKey); // @todo: handle name collision here if needed
-            } else {
-                $output[$finalKey] = $value;
-            }
-        }
-
-        return $output;
-    }
-
-    /**
      * Retry a callback with exponential backoff
      *
      * @param callable $callback
@@ -197,12 +174,15 @@ class Client
      *
      * @param string $url
      * @param string $method
-     * @param array<string>|array<string, mixed>|FormData
+     * @param array<string>|array<string, mixed>|FormData|null $body
+     * @param array<string>|array<string, mixed>|null $query
+     * @return Response
+     * @throws FetchException
      */
     public function fetch(
         string $url,
         string $method = self::METHOD_GET,
-        ?mixed $body = [],
+        mixed $body = [],
         ?array $query = [],
     ): Response {
         if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
@@ -213,7 +193,7 @@ class Client
             if ($body instanceof FormData) {
                 $this->headers['content-type'] = $body->getContentType();
                 $body = $body->build();
-            } else if (isset($this->headers['content-type'])) {
+            } elseif (isset($this->headers['content-type'])) {
                 $body = match ($this->headers['content-type']) {
                     self::CONTENT_TYPE_APPLICATION_JSON => json_encode($body),
                     self::CONTENT_TYPE_GRAPHQL => $body[0],

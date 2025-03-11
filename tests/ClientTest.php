@@ -144,7 +144,9 @@ final class ClientTest extends TestCase
      * Test Client with FormData class
      * @dataProvider formDataSet
      * @runInSeparateProcess
-     * @return void
+     * @param FormData $formData
+     * @param array<string, string> $expectedFields
+     * @param array<string, array<string, string>> $expectedFiles = []
      */
     public function testClientWithFormData(
         FormData $formData,
@@ -498,6 +500,9 @@ final class ClientTest extends TestCase
             $im = imagecreatetruecolor(1, 1);
             imagesavealpha($im, true);
             $trans_colour = imagecolorallocatealpha($im, 0, 0, 0, 127);
+            if (!$trans_colour) {
+                throw new \Exception('Failed to allocate transparent color');
+            }
             imagefill($im, 0, 0, $trans_colour);
             imagepng($im, $imageFilePath);
             imagedestroy($im);
