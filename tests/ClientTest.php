@@ -190,7 +190,7 @@ final class ClientTest extends TestCase
                 // Check if field exists in POST data
                 $this->assertArrayHasKey($field, $respData['post']);
                 $this->assertEquals($value, $respData['post'][$field]);
-                
+
                 // Also verify presence in body format string for compatibility
                 $this->assertStringContainsString('name="' . $field . '"', $respData['body']);
                 $this->assertStringContainsString($value, $respData['body']);
@@ -200,13 +200,13 @@ final class ClientTest extends TestCase
             if (!empty($expectedFiles)) {
                 $filesJson = json_decode($respData['files'], true);
                 $this->assertNotNull($filesJson, "Unable to decode files JSON");
-                
+
                 foreach ($expectedFiles as $fileField => $fileInfo) {
                     $this->assertArrayHasKey($fileField, $filesJson);
                     if (isset($fileInfo['filename'])) {
                         $this->assertEquals($fileInfo['filename'], $filesJson[$fileField]['name']);
                     }
-                    
+
                     // Content verification can be done through the formatted body
                     if (isset($fileInfo['content'])) {
                         $this->assertStringContainsString($fileInfo['content'], $respData['body']);

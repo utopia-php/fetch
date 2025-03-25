@@ -123,7 +123,7 @@ class FormData
             }
             return http_build_query($formData);
         }
-        
+
         // Otherwise, build multipart/form-data
         $body = '';
 
