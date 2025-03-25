@@ -141,14 +141,14 @@ final class ClientTest extends TestCase
     }
 
     /**
-     * Test Client with FormData class
+     * Test FormData fetch
      * @dataProvider formDataSet
      * @runInSeparateProcess
      * @param FormData $formData
      * @param array<string, string> $expectedFields
      * @param array<string, array<string, string>> $expectedFiles = []
      */
-    public function testClientWithFormData(
+    public function testFormData(
         FormData $formData,
         array $expectedFields,
         array $expectedFiles = []
@@ -157,7 +157,7 @@ final class ClientTest extends TestCase
         try {
             $client = new Client();
             $resp = $client->fetch(
-                url: 'localhost:8000/form-data', // Use our specific form-test endpoint
+                url: 'localhost:8000/form-data',
                 method: Client::METHOD_POST,
                 body: $formData,
                 query: []
@@ -185,18 +185,29 @@ final class ClientTest extends TestCase
                 $this->assertStringStartsWith('multipart/form-data; boundary=', $contentType);
             }
 
-            // Check for expected fields in response body
+            // Check for expected fields in the response
             foreach ($expectedFields as $field => $value) {
+                // Check if field exists in POST data
+                $this->assertArrayHasKey($field, $respData['post']);
+                $this->assertEquals($value, $respData['post'][$field]);
+                
+                // Also verify presence in body format string for compatibility
                 $this->assertStringContainsString('name="' . $field . '"', $respData['body']);
                 $this->assertStringContainsString($value, $respData['body']);
             }
 
             // Check for expected files in response
             if (!empty($expectedFiles)) {
+                $filesJson = json_decode($respData['files'], true);
+                $this->assertNotNull($filesJson, "Unable to decode files JSON");
+                
                 foreach ($expectedFiles as $fileField => $fileInfo) {
-                    $this->assertStringContainsString('name="' . $fileField . '"', $respData['body']);
-                    $this->assertStringContainsString('filename="' . $fileInfo['filename'] . '"', $respData['body']);
-
+                    $this->assertArrayHasKey($fileField, $filesJson);
+                    if (isset($fileInfo['filename'])) {
+                        $this->assertEquals($fileInfo['filename'], $filesJson[$fileField]['name']);
+                    }
+                    
+                    // Content verification can be done through the formatted body
                     if (isset($fileInfo['content'])) {
                         $this->assertStringContainsString($fileInfo['content'], $respData['body']);
                     }

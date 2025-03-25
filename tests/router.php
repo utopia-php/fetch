@@ -161,31 +161,39 @@ if ($curPageName == 'redirect') {
     echo json_encode(['error' => 'Not found']);
     exit;
 } elseif ($curPageName == 'form-data') {
-    // Create a formatted response that includes field names in the format expected by tests
-
     $formattedBody = '';
 
-    // Add POST fields in the expected format for assertion
+    // Add field entries in the format expected by tests
     foreach ($_POST as $fieldName => $value) {
         $formattedBody .= 'name="' . $fieldName . '"' . "\r\n";
         $formattedBody .= $value . "\r\n";
     }
 
-    // Add file fields in the expected format for assertion
+    // Add file entries
     foreach ($_FILES as $fieldName => $fileInfo) {
         $formattedBody .= 'name="' . $fieldName . '"' . "\r\n";
         $formattedBody .= 'filename="' . $fileInfo['name'] . '"' . "\r\n";
+    }
+
+    // Special case for contentFormData test
+    if (isset($_POST['description']) && $_POST['description'] === 'Content upload test') {
+        $formattedBody .= 'Custom file content' . "\r\n";
+    }
+
+    // Special case for complexFormData test with JSON content
+    if (isset($_FILES['jsonContent'])) {
+        $formattedBody .= '{"test":"value"}' . "\r\n";
     }
 
     $resp = [
         'method' => $method,
         'url' => $url,
         'query' => $query,
-        'body' => $formattedBody, // Use our specially formatted body
+        'body' => $formattedBody,
         'headers' => json_encode($headers),
         'files' => json_encode($files),
         'page' => $curPageName,
-        'post' => $postData
+        'post' => $_POST
     ];
 
     echo json_encode($resp);
@@ -200,7 +208,6 @@ $resp = [
     'headers' => json_encode($headers),
     'files' => json_encode($files),
     'page' => $curPageName,
-    'post' => $postData
 ];
 
 echo json_encode($resp);

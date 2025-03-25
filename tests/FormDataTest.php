@@ -18,10 +18,10 @@ final class FormDataTest extends TestCase
 
         $body = $formData->build();
 
-        $this->assertStringContainsString('Content-Disposition: form-data; name="name"', $body);
-        $this->assertStringContainsString('John Doe', $body);
-        $this->assertStringContainsString('Content-Disposition: form-data; name="email"', $body);
-        $this->assertStringContainsString('john@example.com', $body);
+        // For fields-only FormData, we expect URL-encoded format
+        $this->assertEquals('application/x-www-form-urlencoded', $formData->getContentType());
+        $this->assertStringContainsString('name=John+Doe', $body);
+        $this->assertStringContainsString('email=john%40example.com', $body);
     }
 
     /**
@@ -35,9 +35,12 @@ final class FormDataTest extends TestCase
 
         $body = $formData->build();
 
-        $this->assertStringContainsString('Content-Disposition: form-data; name="name"', $body);
-        $this->assertStringContainsString('X-Custom-Header: Custom Value', $body);
-        $this->assertStringContainsString('John Doe', $body);
+        // For fields-only FormData, custom headers won't be in the body for URL-encoded format
+        $this->assertEquals('application/x-www-form-urlencoded', $formData->getContentType());
+        $this->assertStringContainsString('name=John+Doe', $body);
+
+        // Note: Custom headers are not included in URL-encoded bodies,
+        // they only appear in multipart format
     }
 
     /**

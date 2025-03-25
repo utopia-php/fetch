@@ -109,12 +109,22 @@ class FormData
     }
 
     /**
-     * Build multipart body
+     * Build request body based on content type
      *
      * @return string
      */
     public function build(): string
     {
+        // If no files, use application/x-www-form-urlencoded format
+        if (empty($this->files)) {
+            $formData = [];
+            foreach ($this->fields as $field) {
+                $formData[$field['name']] = $field['value'];
+            }
+            return http_build_query($formData);
+        }
+        
+        // Otherwise, build multipart/form-data
         $body = '';
 
         // Add fields
