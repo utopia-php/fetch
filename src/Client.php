@@ -125,7 +125,7 @@ class Client
     /**
      * set json_encode flags.
      *
-     * @param array $flags
+     * @param array<int> $flags
      * @return self
     */
     public function setJsonEncodeFlags(array $flags): self
@@ -135,19 +135,27 @@ class Client
     }
 
     /**
-     * Encode  to json.
+     * Encode to json.
      *
-     * @param array $data
+     * @param array<string, mixed> $data
      * @return string
+     * @throws \Exception If JSON encoding fails
      */
     private function jsonEncode(array $data): string
     {
+        $result = null;
 
-        if(!empty($this->jsonEncodeFlags)) {
-            return json_encode($data, $this->jsonEncodeFlags);
+        if (!empty($this->jsonEncodeFlags)) {
+            $result = json_encode($data, $this->jsonEncodeFlags);
+        } else {
+            $result = json_encode($data);
         }
 
-        return json_encode($data);
+        if ($result === false) {
+            throw new Exception('Failed to encode data to JSON: ' . json_last_error_msg());
+        }
+
+        return $result;
     }
     /**
      * Set the retry delay in milliseconds.
