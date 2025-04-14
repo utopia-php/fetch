@@ -35,6 +35,7 @@ class Client
 
     /** @var array<int> $retryStatusCodes */
     private array $retryStatusCodes = [500, 503];
+    private mixed $jsonEncodeFlags;
 
     /**
      * @param string $key
@@ -121,7 +122,41 @@ class Client
         $this->maxRetries = $maxRetries;
         return $this;
     }
+    /**
+     * set json_encode flags.
+     *
+     * @param array<int> $flags
+     * @return self
+    */
+    public function setJsonEncodeFlags(array $flags): self
+    {
+        $this->jsonEncodeFlags = implode('|', $flags);
+        return $this;
+    }
 
+    /**
+     * Encode to json.
+     *
+     * @param array<string, mixed> $data
+     * @return string
+     * @throws \Exception If JSON encoding fails
+     */
+    private function jsonEncode(array $data): string
+    {
+        $result = null;
+
+        if (!empty($this->jsonEncodeFlags)) {
+            $result = json_encode($data, $this->jsonEncodeFlags);
+        } else {
+            $result = json_encode($data);
+        }
+
+        if ($result === false) {
+            throw new Exception('Failed to encode data to JSON: ' . json_last_error_msg());
+        }
+
+        return $result;
+    }
     /**
      * Set the retry delay in milliseconds.
      *
@@ -215,7 +250,7 @@ class Client
 
         if (isset($this->headers['content-type']) && $body !== null) {
             $body = match ($this->headers['content-type']) {
-                self::CONTENT_TYPE_APPLICATION_JSON => json_encode($body),
+                self::CONTENT_TYPE_APPLICATION_JSON => $this->jsonEncode($body),
                 self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => self::flatten($body),
                 self::CONTENT_TYPE_GRAPHQL => $body[0],
                 default => $body,
