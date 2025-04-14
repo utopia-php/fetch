@@ -44,8 +44,7 @@ $curPageName = substr($_SERVER['REQUEST_URI'], strrpos($_SERVER['REQUEST_URI'], 
 if ($curPageName == 'redirect') {
     header('Location: http://localhost:8000/redirectedPage');
     exit;
-}
-if ($curPageName == 'image') {
+} elseif ($curPageName == 'image') {
     $filename = __DIR__."/resources/logo.png";
     header("Content-disposition: attachment;filename=$filename");
     header("Content-type: application/octet-stream");
@@ -85,15 +84,89 @@ if ($curPageName == 'image') {
         'success' => true,
         'attempts' => $state['attempts']
     ]);
+} elseif ($curPageName == 'chunked') {
+    // Set headers for chunked response
+    header('Content-Type: text/plain');
+    header('Transfer-Encoding: chunked');
+
+    // Send chunks with delay
+    $chunks = [
+        "This is the first chunk\n",
+        "This is the second chunk\n",
+        "This is the final chunk\n"
+    ];
+
+    foreach ($chunks as $chunk) {
+        printf("%x\r\n%s\r\n", strlen($chunk), $chunk);
+        flush();
+        usleep(100000); // 100ms delay between chunks
+    }
+
+    // Send the final empty chunk to indicate the end of the response
+    echo "0\r\n\r\n";
+    exit;
+} elseif ($curPageName == 'chunked-json') {
+    // Set headers for chunked JSON response
+    header('Content-Type: application/json');
+    header('Transfer-Encoding: chunked');
+
+    // Send JSON chunks
+    $chunks = [
+        json_encode(['chunk' => 1, 'data' => 'First chunk']),
+        json_encode(['chunk' => 2, 'data' => 'Second chunk']),
+        json_encode(['chunk' => 3, 'data' => 'Final chunk'])
+    ];
+
+    foreach ($chunks as $chunk) {
+        $chunk .= "\n"; // Add newline for JSON lines format
+        printf("%x\r\n%s\r\n", strlen($chunk), $chunk);
+        flush();
+        usleep(100000); // 100ms delay between chunks
+    }
+
+    // Send the final empty chunk to indicate the end of the response
+    echo "0\r\n\r\n";
+    exit;
+} elseif ($curPageName == 'chunked-error') {
+    // Set error status code
+    http_response_code(400);
+
+    // Set headers for chunked JSON response
+    header('Content-Type: application/json');
+    header('Transfer-Encoding: chunked');
+
+    // Send JSON chunks with error details
+    $chunks = [
+        json_encode(['error' => 'Validation error', 'field' => 'username']),
+        json_encode(['error' => 'Additional details', 'context' => 'Form submission']),
+        json_encode(['error' => 'Final error message', 'code' => 'INVALID_INPUT'])
+    ];
+
+    foreach ($chunks as $chunk) {
+        $chunk .= "\n"; // Add newline for JSON lines format
+        printf("%x\r\n%s\r\n", strlen($chunk), $chunk);
+        flush();
+        usleep(100000); // 100ms delay between chunks
+    }
+
+    // Send the final empty chunk to indicate the end of the response
+    echo "0\r\n\r\n";
+    exit;
+} elseif ($curPageName == 'error') {
+    http_response_code(404);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Not found']);
+    exit;
 }
+
 $resp = [
-  'method' => $method,
-  'url' => $url,
-  'query' => $query,
-  'body' => $body,
-  'headers' => json_encode($headers),
-  'files' => json_encode($files),
-  'page' => $curPageName,
+    'method' => $method,
+    'url' => $url,
+    'query' => $query,
+    'body' => $body,
+    'headers' => json_encode($headers),
+    'files' => json_encode($files),
+    'page' => $curPageName,
 ];
 
 echo json_encode($resp);
