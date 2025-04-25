@@ -182,6 +182,29 @@ class Client
     }
 
     /**
+     * Flatten request body array to PHP multiple format
+     *
+     * @param array<mixed> $data
+     * @param string $prefix
+     * @return array<mixed>
+     */
+    private static function flatten(array $data, string $prefix = ''): array
+    {
+        $output = [];
+        foreach ($data as $key => $value) {
+            $finalKey = $prefix ? "{$prefix}[{$key}]" : $key;
+
+            if (is_array($value)) {
+                $output += self::flatten($value, $finalKey); // @todo: handle name collision here if needed
+            } else {
+                $output[$finalKey] = $value;
+            }
+        }
+
+        return $output;
+    }
+
+    /**
      * Retry a callback with exponential backoff
      *
      * @param callable $callback
@@ -230,7 +253,7 @@ class Client
             if ($body instanceof FormData) {
                 $this->headers['content-type'] = $body->getContentType();
                 $body = $body->build();
-            
+
             } elseif (isset($this->headers['content-type'])) {
                 $body = match ($this->headers['content-type']) {
                     self::CONTENT_TYPE_APPLICATION_JSON => $this->jsonEncode($body),
