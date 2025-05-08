@@ -25,8 +25,8 @@ class Client
 
     /** @var array<string, string> headers */
     private array $headers = [];
-    private int $timeout = 15;
-    private int $connectTimeout = 60;
+    private int $timeout = 15000; // milliseconds (15 seconds)
+    private int $connectTimeout = 60000; // milliseconds (60 seconds)
     private int $maxRedirects = 5;
     private bool $allowRedirects = true;
     private string $userAgent = '';
@@ -51,7 +51,7 @@ class Client
     /**
      * Set the request timeout.
      *
-     * @param int $timeout
+     * @param int $timeout Timeout in milliseconds
      * @return self
      */
     public function setTimeout(int $timeout): self
@@ -87,7 +87,7 @@ class Client
     /**
      * Set the connection timeout.
      *
-     * @param int $connectTimeout
+     * @param int $connectTimeout Timeout in milliseconds
      * @return self
      */
     public function setConnectTimeout(int $connectTimeout): self
@@ -235,6 +235,8 @@ class Client
      * @param array<string>|array<string, mixed> $body
      * @param array<string, mixed> $query
      * @param ?callable $chunks Optional callback function that receives a Chunk object
+     * @param ?int $timeoutMs Optional request timeout in milliseconds
+     * @param ?int $connectTimeoutMs Optional connection timeout in milliseconds
      * @return Response
      */
     public function fetch(
@@ -243,6 +245,8 @@ class Client
         ?array $body = [],
         ?array $query = [],
         ?callable $chunks = null,
+        ?int $timeoutMs = null,
+        ?int $connectTimeoutMs = null,
     ): Response {
         if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
             throw new Exception("Unsupported HTTP method");
@@ -297,8 +301,8 @@ class Client
                 }
                 return strlen($data);
             },
-            CURLOPT_CONNECTTIMEOUT => $this->connectTimeout,
-            CURLOPT_TIMEOUT => $this->timeout,
+            CURLOPT_CONNECTTIMEOUT_MS => $connectTimeoutMs ?? $this->connectTimeout,
+            CURLOPT_TIMEOUT_MS => $timeoutMs ?? $this->timeout,
             CURLOPT_MAXREDIRS => $this->maxRedirects,
             CURLOPT_FOLLOWLOCATION => $this->allowRedirects,
             CURLOPT_USERAGENT => $this->userAgent
@@ -339,7 +343,7 @@ class Client
     }
 
     /**
-     * Get the request timeout.
+     * Get the request timeout in milliseconds.
      *
      * @return int
      */
@@ -369,7 +373,7 @@ class Client
     }
 
     /**
-     * Get the connection timeout.
+     * Get the connection timeout in milliseconds.
      *
      * @return int
      */
