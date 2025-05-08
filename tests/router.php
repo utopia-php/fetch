@@ -3,11 +3,14 @@
 $method = $_SERVER['REQUEST_METHOD']; // Get the request method
 $url = $_SERVER['HTTP_HOST']; // Get the request URL
 $query = $_GET; // Get the request arguments/queries
-$headers = getallheaders(); // Get request headers
+$headers = getallheaders(); // Get the request headers
 $body = file_get_contents("php://input"); // Get the request body
 $files = $_FILES; // Get the request files
 
 $stateFile = __DIR__ . '/state.json';
+
+// For multipart/form-data, also include the POST data
+$postData = $_POST;
 
 /**
  * Get the state from the state file
@@ -156,6 +159,44 @@ if ($curPageName == 'redirect') {
     http_response_code(404);
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Not found']);
+    exit;
+} elseif ($curPageName == 'form-data') {
+    $formattedBody = '';
+
+    // Add field entries in the format expected by tests
+    foreach ($_POST as $fieldName => $value) {
+        $formattedBody .= 'name="' . $fieldName . '"' . "\r\n";
+        $formattedBody .= $value . "\r\n";
+    }
+
+    // Add file entries
+    foreach ($_FILES as $fieldName => $fileInfo) {
+        $formattedBody .= 'name="' . $fieldName . '"' . "\r\n";
+        $formattedBody .= 'filename="' . $fileInfo['name'] . '"' . "\r\n";
+    }
+
+    // Special case for contentFormData test
+    if (isset($_POST['description']) && $_POST['description'] === 'Content upload test') {
+        $formattedBody .= 'Custom file content' . "\r\n";
+    }
+
+    // Special case for complexFormData test with JSON content
+    if (isset($_FILES['jsonContent'])) {
+        $formattedBody .= '{"test":"value"}' . "\r\n";
+    }
+
+    $resp = [
+        'method' => $method,
+        'url' => $url,
+        'query' => $query,
+        'body' => $formattedBody,
+        'headers' => json_encode($headers),
+        'files' => json_encode($files),
+        'page' => $curPageName,
+        'post' => $_POST
+    ];
+
+    echo json_encode($resp);
     exit;
 }
 

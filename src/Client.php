@@ -232,17 +232,18 @@ class Client
      *
      * @param string $url
      * @param string $method
-     * @param array<string>|array<string, mixed> $body
+     * @param array<string>|array<string, mixed>|FormData|null $body
      * @param array<string, mixed> $query
      * @param ?callable $chunks Optional callback function that receives a Chunk object
      * @param ?int $timeoutMs Optional request timeout in milliseconds
      * @param ?int $connectTimeoutMs Optional connection timeout in milliseconds
      * @return Response
+     * @throws Exception
      */
     public function fetch(
         string $url,
         string $method = self::METHOD_GET,
-        ?array $body = [],
+        mixed $body = [],
         ?array $query = [],
         ?callable $chunks = null,
         ?int $timeoutMs = null,
@@ -252,13 +253,21 @@ class Client
             throw new Exception("Unsupported HTTP method");
         }
 
-        if (isset($this->headers['content-type']) && $body !== null) {
-            $body = match ($this->headers['content-type']) {
-                self::CONTENT_TYPE_APPLICATION_JSON => $this->jsonEncode($body),
-                self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => self::flatten($body),
-                self::CONTENT_TYPE_GRAPHQL => $body[0],
-                default => $body,
-            };
+        if ($body !== null) {
+            if ($body instanceof FormData) {
+                $this->headers['content-type'] = $body->getContentType();
+                $body = $body->build();
+
+            } elseif (isset($this->headers['content-type'])) {
+                $body = match ($this->headers['content-type']) {
+                    self::CONTENT_TYPE_APPLICATION_JSON => $this->jsonEncode($body),
+                    self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED,
+                    self::CONTENT_TYPE_MULTIPART_FORM_DATA => self::
+                  ($body),
+                    self::CONTENT_TYPE_GRAPHQL => $body[0],
+                    default => $body,
+                };
+            }
         }
 
         $formattedHeaders = array_map(function ($key, $value) {

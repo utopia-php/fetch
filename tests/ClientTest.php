@@ -85,6 +85,7 @@ final class ClientTest extends TestCase
             echo "Please configure your PHP inbuilt SERVER";
         }
     }
+
     /**
      * Test for sending a file in the request body
      * @dataProvider sendFileDataSet
@@ -138,6 +139,85 @@ final class ClientTest extends TestCase
             echo "Please configure your PHP inbuilt SERVER";
         }
     }
+
+    /**
+     * Test FormData fetch
+     * @dataProvider formDataSet
+     * @runInSeparateProcess
+     * @param FormData $formData
+     * @param array<string, string> $expectedFields
+     * @param array<string, array<string, string>> $expectedFiles = []
+     */
+    public function testFormData(
+        FormData $formData,
+        array $expectedFields,
+        array $expectedFiles = []
+    ): void {
+        $resp = null;
+        try {
+            $client = new Client();
+            $resp = $client->fetch(
+                url: 'localhost:8000/form-data',
+                method: Client::METHOD_POST,
+                body: $formData,
+                query: []
+            );
+        } catch (Exception $e) {
+            echo $e;
+            return;
+        }
+
+        if ($resp->getStatusCode() === 200) {
+            $respData = $resp->json();
+
+            // Check method and URL
+            $this->assertEquals(Client::METHOD_POST, $respData['method']);
+            $this->assertEquals('localhost:8000', $respData['url']);
+
+            // Check content type header
+            $respHeaders = json_decode($respData['headers'], true);
+            $contentType = $respHeaders['Content-Type'] ?? $respHeaders['content-type'] ?? '';
+
+            if (empty($expectedFiles)) {
+                $this->assertEquals('application/x-www-form-urlencoded', $formData->getContentType());
+            } else {
+                $this->assertStringStartsWith('multipart/form-data; boundary=', $formData->getContentType());
+                $this->assertStringStartsWith('multipart/form-data; boundary=', $contentType);
+            }
+
+            // Check for expected fields in the response
+            foreach ($expectedFields as $field => $value) {
+                // Check if field exists in POST data
+                $this->assertArrayHasKey($field, $respData['post']);
+                $this->assertEquals($value, $respData['post'][$field]);
+
+                // Also verify presence in body format string for compatibility
+                $this->assertStringContainsString('name="' . $field . '"', $respData['body']);
+                $this->assertStringContainsString($value, $respData['body']);
+            }
+
+            // Check for expected files in response
+            if (!empty($expectedFiles)) {
+                $filesJson = json_decode($respData['files'], true);
+                $this->assertNotNull($filesJson, "Unable to decode files JSON");
+
+                foreach ($expectedFiles as $fileField => $fileInfo) {
+                    $this->assertArrayHasKey($fileField, $filesJson);
+                    if (isset($fileInfo['filename'])) {
+                        $this->assertEquals($fileInfo['filename'], $filesJson[$fileField]['name']);
+                    }
+
+                    // Content verification can be done through the formatted body
+                    if (isset($fileInfo['content'])) {
+                        $this->assertStringContainsString($fileInfo['content'], $respData['body']);
+                    }
+                }
+            }
+        } else {
+            $this->markTestSkipped("Test server is not running at localhost:8000");
+        }
+    }
+
     /**
      * Test for getting a file as a response
      * @dataProvider getFileDataSet
@@ -174,6 +254,7 @@ final class ClientTest extends TestCase
             echo "Please configure your PHP inbuilt SERVER";
         }
     }
+
     /**
      * Test for redirect
      * @return void
@@ -340,6 +421,127 @@ final class ClientTest extends TestCase
             ],
         ];
     }
+
+    /**
+     * Data provider for testClientWithFormData
+     * @return array<string, array<mixed>>
+     */
+    public function formDataSet(): array
+    {
+        $textFilePath = __DIR__ . '/resources/test.txt';
+        $imageFilePath = __DIR__ . '/resources/logo.png';
+
+        // Create test files if they don't exist for testing
+        if (!file_exists($textFilePath)) {
+            $dir = dirname($textFilePath);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0777, true);
+            }
+            file_put_contents($textFilePath, 'Text file content');
+        }
+
+        if (!file_exists($imageFilePath)) {
+            $dir = dirname($imageFilePath);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0777, true);
+            }
+
+            // Create a simple 1x1 transparent PNG
+            $im = imagecreatetruecolor(1, 1);
+            imagesavealpha($im, true);
+            $trans_colour = imagecolorallocatealpha($im, 0, 0, 0, 127);
+            if (!$trans_colour) {
+                throw new \Exception('Failed to allocate transparent color');
+            }
+            imagefill($im, 0, 0, $trans_colour);
+            imagepng($im, $imageFilePath);
+            imagedestroy($im);
+        }
+
+        // Basic form data with fields only
+        $basicFormData = new FormData();
+        $basicFormData->addField('name', 'John Doe');
+        $basicFormData->addField('email', 'john@example.com');
+
+        // Form data with custom headers
+        $customHeaderFormData = new FormData();
+        $customHeaderFormData->addField('name', 'Jane Doe', ['X-Custom-Header' => 'Custom Value']);
+
+        // Form data with a file
+        $fileFormData = new FormData();
+        $fileFormData->addField('description', 'File upload test');
+        $fileFormData->addFile('file', $textFilePath);
+
+        // Form data with direct content
+        $contentFormData = new FormData();
+        $contentFormData->addField('description', 'Content upload test');
+        $contentFormData->addContent('file', 'Custom file content', 'custom.txt', 'text/plain');
+
+        // Complex form data with multiple fields and files
+        $complexFormData = new FormData();
+        $complexFormData->addField('name', 'John Doe');
+        $complexFormData->addField('email', 'john@example.com');
+        $complexFormData->addField('custom', 'Custom value', ['X-Custom-Field' => 'Test']);
+        $complexFormData->addFile('textFile', $textFilePath);
+        $complexFormData->addContent('jsonContent', '{"test":"value"}', 'data.json', 'application/json');
+
+        return [
+            'basicFormData' => [
+                $basicFormData,
+                [
+                    'name' => 'John Doe',
+                    'email' => 'john@example.com'
+                ]
+            ],
+            'customHeaderFormData' => [
+                $customHeaderFormData,
+                [
+                    'name' => 'Jane Doe'
+                ]
+            ],
+            'fileFormData' => [
+                $fileFormData,
+                [
+                    'description' => 'File upload test'
+                ],
+                [
+                    'file' => [
+                        'filename' => 'test.txt'
+                    ]
+                ]
+            ],
+            'contentFormData' => [
+                $contentFormData,
+                [
+                    'description' => 'Content upload test'
+                ],
+                [
+                    'file' => [
+                        'filename' => 'custom.txt',
+                        'content' => 'Custom file content'
+                    ]
+                ]
+            ],
+            'complexFormData' => [
+                $complexFormData,
+                [
+                    'name' => 'John Doe',
+                    'email' => 'john@example.com',
+                    'custom' => 'Custom value'
+                ],
+                [
+                    'textFile' => [
+                        'filename' => 'test.txt'
+                    ],
+                    'jsonContent' => [
+                        'filename' => 'data.json',
+                        'content' => '{"test":"value"}'
+                    ]
+                ]
+            ]
+        ];
+    }
+
     /**
      * Data provider for testGetFile
      * @return array<string, array<mixed>>
