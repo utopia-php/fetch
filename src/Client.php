@@ -261,7 +261,7 @@ class Client
         ?int $connectTimeoutMs = null,
     ): Response {
         $url = "{$this->baseUrl}{$url}";
-        
+
         if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
             throw new Exception("Unsupported HTTP method");
         }
