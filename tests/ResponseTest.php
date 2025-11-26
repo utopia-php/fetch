@@ -23,9 +23,9 @@ final class ResponseTest extends TestCase
             headers: $headers,
             statusCode: $statusCode
         );
-        $this->assertEquals($body, $resp->getBody());
-        $this->assertEquals($headers, $resp->getHeaders());
-        $this->assertEquals($statusCode, $resp->getStatusCode());
+        $this->assertSame($body, $resp->getBody());
+        $this->assertSame($headers, $resp->getHeaders());
+        $this->assertSame($statusCode, $resp->getStatusCode());
     }
 
     /**
@@ -46,14 +46,14 @@ final class ResponseTest extends TestCase
             headers: $headers,
             statusCode: $statusCode,
         );
-        $this->assertEquals($body, $resp->getBody()); // Assert that the body is equal to the response's body
+        $this->assertSame($body, $resp->getBody()); // Assert that the body is equal to the response's body
         $jsonBody = \json_decode($body, true); // Convert JSON string to object
-        $this->assertEquals($jsonBody, $resp->json()); // Assert that the JSON body is equal to the response's JSON body
+        $this->assertSame($jsonBody, $resp->json()); // Assert that the JSON body is equal to the response's JSON body
         $bin = ""; // Convert string to binary
         for ($i = 0, $j = strlen($body); $i < $j; $i++) {
             $bin .= decbin(ord($body)) . " ";
         }
-        $this->assertEquals($bin, $resp->blob()); // Assert that the blob body is equal to the response's blob body
+        $this->assertSame($bin, $resp->blob()); // Assert that the blob body is equal to the response's blob body
     }
     /**
      * Data provider for testClassConstructorAndGetters and testClassMethods

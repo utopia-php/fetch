@@ -45,21 +45,21 @@ final class ClientTest extends TestCase
         }
         if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
-            $this->assertEquals($respData['method'], $method); // Assert that the method is equal to the response's method
+            $this->assertSame($respData['method'], $method); // Assert that the method is equal to the response's method
             if ($method != Client::METHOD_GET) {
                 if (empty($body)) { // if body is empty then response body should be an empty string
-                    $this->assertEquals($respData['body'], '');
+                    $this->assertSame($respData['body'], '');
                 } else {
                     if ($headers['content-type'] != "application/x-www-form-urlencoded") {
-                        $this->assertEquals( // Assert that the body is equal to the response's body
+                        $this->assertSame( // Assert that the body is equal to the response's body
                             $respData['body'],
                             json_encode($body) // Converting the body to JSON string
                         );
                     }
                 }
             }
-            $this->assertEquals($respData['url'], $url); // Assert that the url is equal to the response's url
-            $this->assertEquals(
+            $this->assertSame($respData['url'], $url); // Assert that the url is equal to the response's url
+            $this->assertSame(
                 json_encode($respData['query']), // Converting the query to JSON string
                 json_encode($query) // Converting the query to JSON string
             ); // Assert that the args are equal to the response's args
@@ -71,15 +71,15 @@ final class ClientTest extends TestCase
                 $contentType = $respHeaders['content-type'];
             }
             $contentType = explode(';', $contentType)[0];
-            $this->assertEquals($host, $url); // Assert that the host is equal to the response's host
+            $this->assertSame($host, $url); // Assert that the host is equal to the response's host
             if (empty($headers)) {
                 if (empty($body)) {
-                    $this->assertEquals($contentType, 'application/x-www-form-urlencoded');
+                    $this->assertSame($contentType, 'application/x-www-form-urlencoded');
                 } else {
-                    $this->assertEquals($contentType, 'application/json');
+                    $this->assertSame($contentType, 'application/json');
                 }
             } else {
-                $this->assertEquals($contentType, $headers['content-type']); // Assert that the content-type is equal to the response's content-type
+                $this->assertSame($contentType, $headers['content-type']); // Assert that the content-type is equal to the response's content-type
             }
         } else { // If the response is not OK
             echo "Please configure your PHP inbuilt SERVER";
@@ -114,10 +114,10 @@ final class ClientTest extends TestCase
         if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
             if (isset($respData['method'])) {
-                $this->assertEquals($respData['method'], Client::METHOD_POST);
+                $this->assertSame($respData['method'], Client::METHOD_POST);
             } // Assert that the method is equal to the response's method
-            $this->assertEquals($respData['url'], 'localhost:8000'); // Assert that the url is equal to the response's url
-            $this->assertEquals(
+            $this->assertSame($respData['url'], 'localhost:8000'); // Assert that the url is equal to the response's url
+            $this->assertSame(
                 json_encode($respData['query']), // Converting the query to JSON string
                 json_encode([]) // Converting the query to JSON string
             ); // Assert that the args are equal to the response's args
@@ -130,10 +130,10 @@ final class ClientTest extends TestCase
                 ]
             ];
             $resp_files = json_decode($respData['files'], true);
-            $this->assertEquals($files['file']['name'], $resp_files['file']['name']);
-            $this->assertEquals($files['file']['full_path'], $resp_files['file']['full_path']);
-            $this->assertEquals($files['file']['type'], $resp_files['file']['type']);
-            $this->assertEquals($files['file']['error'], $resp_files['file']['error']);
+            $this->assertSame($files['file']['name'], $resp_files['file']['name']);
+            $this->assertSame($files['file']['full_path'], $resp_files['file']['full_path']);
+            $this->assertSame($files['file']['type'], $resp_files['file']['type']);
+            $this->assertSame($files['file']['error'], $resp_files['file']['error']);
         } else { // If the response is not OK
             echo "Please configure your PHP inbuilt SERVER";
         }
@@ -166,7 +166,7 @@ final class ClientTest extends TestCase
             if ($data && $size) {
                 $contents = fread($data, $size);
                 fclose($data);
-                $this->assertEquals($resp->getBody(), $contents); // Assert that the body is equal to the expected file contents
+                $this->assertSame($resp->getBody(), $contents); // Assert that the body is equal to the expected file contents
             } else {
                 echo "Invalid file path in testcase";
             }
@@ -195,7 +195,7 @@ final class ClientTest extends TestCase
         }
         if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
-            $this->assertEquals($respData['page'], "redirectedPage"); // Assert that the page is the redirected page
+            $this->assertSame($respData['page'], "redirectedPage"); // Assert that the page is the redirected page
         } else { // If the response is not OK
             echo "Please configure your PHP inbuilt SERVER";
         }
@@ -212,7 +212,7 @@ final class ClientTest extends TestCase
 
         $client->setTimeout($timeout);
 
-        $this->assertEquals($timeout, $client->getTimeout());
+        $this->assertSame($timeout, $client->getTimeout());
     }
 
     /**
@@ -226,7 +226,7 @@ final class ClientTest extends TestCase
 
         $client->setAllowRedirects($allowRedirects);
 
-        $this->assertEquals($allowRedirects, $client->getAllowRedirects());
+        $this->assertSame($allowRedirects, $client->getAllowRedirects());
     }
 
     /**
@@ -240,7 +240,7 @@ final class ClientTest extends TestCase
 
         $client->setMaxRedirects($maxRedirects);
 
-        $this->assertEquals($maxRedirects, $client->getMaxRedirects());
+        $this->assertSame($maxRedirects, $client->getMaxRedirects());
     }
 
     /**
@@ -254,7 +254,7 @@ final class ClientTest extends TestCase
 
         $client->setConnectTimeout($connectTimeout);
 
-        $this->assertEquals($connectTimeout, $client->getConnectTimeout());
+        $this->assertSame($connectTimeout, $client->getConnectTimeout());
     }
 
     /**
@@ -268,7 +268,7 @@ final class ClientTest extends TestCase
 
         $client->setUserAgent($userAgent);
 
-        $this->assertEquals($userAgent, $client->getUserAgent());
+        $this->assertSame($userAgent, $client->getUserAgent());
     }
 
     /**
@@ -368,18 +368,18 @@ final class ClientTest extends TestCase
         $client->setMaxRetries(3);
         $client->setRetryDelay(1000);
 
-        $this->assertEquals(3, $client->getMaxRetries());
-        $this->assertEquals(1000, $client->getRetryDelay());
+        $this->assertSame(3, $client->getMaxRetries());
+        $this->assertSame(1000, $client->getRetryDelay());
 
         $res = $client->fetch('localhost:8000/mock-retry');
-        $this->assertEquals(200, $res->getStatusCode());
+        $this->assertSame(200, $res->getStatusCode());
 
         unlink(__DIR__ . '/state.json');
 
         // Test if we get a 500 error if we go under the server's max retries
         $client->setMaxRetries(1);
         $res = $client->fetch('localhost:8000/mock-retry');
-        $this->assertEquals(503, $res->getStatusCode());
+        $this->assertSame(503, $res->getStatusCode());
 
         unlink(__DIR__ . '/state.json');
     }
@@ -397,7 +397,7 @@ final class ClientTest extends TestCase
 
         $res = $client->fetch('localhost:8000/mock-retry');
         $this->assertGreaterThan($now + 3.0, microtime(true));
-        $this->assertEquals(200, $res->getStatusCode());
+        $this->assertSame(200, $res->getStatusCode());
         unlink(__DIR__ . '/state.json');
     }
 
@@ -414,7 +414,7 @@ final class ClientTest extends TestCase
         $now = microtime(true);
 
         $res = $client->fetch('localhost:8000/mock-retry-401');
-        $this->assertEquals(200, $res->getStatusCode());
+        $this->assertSame(200, $res->getStatusCode());
         $this->assertGreaterThan($now + 3.0, microtime(true));
         unlink(__DIR__ . '/state.json');
     }
@@ -439,11 +439,11 @@ final class ClientTest extends TestCase
         );
 
         $this->assertGreaterThan(0, count($chunks));
-        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertSame(200, $response->getStatusCode());
 
         // Test chunk metadata
         foreach ($chunks as $index => $chunk) {
-            $this->assertEquals($index, $chunk->getIndex());
+            $this->assertSame($index, $chunk->getIndex());
             $this->assertGreaterThan(0, $chunk->getSize());
             $this->assertGreaterThan(0, $chunk->getTimestamp());
             $this->assertNotEmpty($chunk->getData());
@@ -511,7 +511,7 @@ final class ClientTest extends TestCase
         if ($errorChunk !== null) {
             $this->assertNotEmpty($errorChunk->getData());
         }
-        $this->assertEquals(404, $response->getStatusCode());
+        $this->assertSame(404, $response->getStatusCode());
     }
 
     /**
@@ -538,13 +538,13 @@ final class ClientTest extends TestCase
         );
 
         // Verify response status code
-        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertSame(400, $response->getStatusCode());
 
         // Verify we received chunks
         $this->assertCount(3, $chunks);
 
         // Verify error messages were received in order
-        $this->assertEquals([
+        $this->assertSame([
             'Validation error',
             'Additional details',
             'Final error message'
@@ -554,6 +554,6 @@ final class ClientTest extends TestCase
         $this->assertArrayHasKey(0, $chunks);
         $firstChunk = json_decode($chunks[0]->getData(), true);
         $this->assertIsArray($firstChunk);
-        $this->assertEquals('username', $firstChunk['field']);
+        $this->assertSame('username', $firstChunk['field']);
     }
 }

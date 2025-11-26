@@ -20,20 +20,20 @@ final class ChunkTest extends TestCase
         $chunk = new Chunk($data, $size, $timestamp, $index);
 
         // Test getData method
-        $this->assertEquals($data, $chunk->getData());
+        $this->assertSame($data, $chunk->getData());
         $this->assertIsString($chunk->getData());
 
         // Test getSize method
-        $this->assertEquals($size, $chunk->getSize());
+        $this->assertSame($size, $chunk->getSize());
         $this->assertIsInt($chunk->getSize());
-        $this->assertEquals(strlen($chunk->getData()), $chunk->getSize());
+        $this->assertSame(strlen($chunk->getData()), $chunk->getSize());
 
         // Test getTimestamp method
-        $this->assertEquals($timestamp, $chunk->getTimestamp());
+        $this->assertSame($timestamp, $chunk->getTimestamp());
         $this->assertIsFloat($chunk->getTimestamp());
 
         // Test getIndex method
-        $this->assertEquals($index, $chunk->getIndex());
+        $this->assertSame($index, $chunk->getIndex());
         $this->assertIsInt($chunk->getIndex());
     }
 
@@ -50,10 +50,10 @@ final class ChunkTest extends TestCase
 
         $chunk = new Chunk($data, $size, $timestamp, $index);
 
-        $this->assertEquals('', $chunk->getData());
-        $this->assertEquals(0, $chunk->getSize());
-        $this->assertEquals($timestamp, $chunk->getTimestamp());
-        $this->assertEquals(1, $chunk->getIndex());
+        $this->assertSame('', $chunk->getData());
+        $this->assertSame(0, $chunk->getSize());
+        $this->assertSame($timestamp, $chunk->getTimestamp());
+        $this->assertSame(1, $chunk->getIndex());
     }
 
     /**
@@ -69,11 +69,11 @@ final class ChunkTest extends TestCase
 
         $chunk = new Chunk($data, $size, $timestamp, $index);
 
-        $this->assertEquals($data, $chunk->getData());
-        $this->assertEquals(5, $chunk->getSize());
-        $this->assertEquals($timestamp, $chunk->getTimestamp());
-        $this->assertEquals(2, $chunk->getIndex());
-        $this->assertEquals("Hello", $chunk->getData());
+        $this->assertSame($data, $chunk->getData());
+        $this->assertSame(5, $chunk->getSize());
+        $this->assertSame($timestamp, $chunk->getTimestamp());
+        $this->assertSame(2, $chunk->getIndex());
+        $this->assertSame("Hello", $chunk->getData());
     }
 
     /**
@@ -89,10 +89,10 @@ final class ChunkTest extends TestCase
 
         $chunk = new Chunk($data, $size, $timestamp, $index);
 
-        $this->assertEquals($data, $chunk->getData());
-        $this->assertEquals($size, $chunk->getSize());
-        $this->assertEquals($timestamp, $chunk->getTimestamp());
-        $this->assertEquals(3, $chunk->getIndex());
+        $this->assertSame($data, $chunk->getData());
+        $this->assertSame($size, $chunk->getSize());
+        $this->assertSame($timestamp, $chunk->getTimestamp());
+        $this->assertSame(3, $chunk->getIndex());
     }
 
     /**
@@ -116,10 +116,10 @@ final class ChunkTest extends TestCase
         $modifiedData = $chunk->getData() . " modified";
 
         // Verify original chunk remains unchanged
-        $this->assertEquals($originalData, $chunk->getData());
-        $this->assertEquals($originalSize, $chunk->getSize());
-        $this->assertEquals($originalTimestamp, $chunk->getTimestamp());
-        $this->assertEquals($originalIndex, $chunk->getIndex());
+        $this->assertSame($originalData, $chunk->getData());
+        $this->assertSame($originalSize, $chunk->getSize());
+        $this->assertSame($originalTimestamp, $chunk->getTimestamp());
+        $this->assertSame($originalIndex, $chunk->getIndex());
         $this->assertNotEquals($modifiedData, $chunk->getData());
     }
 }
