@@ -272,6 +272,141 @@ final class ClientTest extends TestCase
     }
 
     /**
+     * Test setting and getting the base URL.
+     * @return void
+     */
+    public function testSetGetBaseUrl(): void
+    {
+        $client = new Client();
+        $baseUrl = "http://localhost:8000";
+
+        $client->setBaseUrl($baseUrl);
+
+        $this->assertEquals($baseUrl, $client->getBaseUrl());
+    }
+
+    /**
+     * Test base URL prepending to relative URLs.
+     * @return void
+     */
+    public function testBaseUrlWithRelativePath(): void
+    {
+        $client = new Client();
+        $client->setBaseUrl('http://localhost:8000');
+
+        $resp = $client->fetch(
+            url: '',
+            method: Client::METHOD_GET
+        );
+
+        if ($resp->getStatusCode() === 200) {
+            $respData = $resp->json();
+            $this->assertEquals($respData['method'], Client::METHOD_GET);
+            $this->assertEquals($respData['url'], 'localhost:8000');
+        } else {
+            echo "Please configure your PHP inbuilt SERVER";
+        }
+    }
+
+    /**
+     * Test base URL with path appending.
+     * @return void
+     */
+    public function testBaseUrlWithPath(): void
+    {
+        $client = new Client();
+        $client->setBaseUrl('http://localhost:8000');
+
+        $resp = $client->fetch(
+            url: 'redirect',
+            method: Client::METHOD_GET
+        );
+
+        if ($resp->getStatusCode() === 200) {
+            $respData = $resp->json();
+            $this->assertEquals($respData['page'], "redirectedPage");
+        } else {
+            echo "Please configure your PHP inbuilt SERVER";
+        }
+    }
+
+    /**
+     * Test base URL doesn't interfere with absolute URLs.
+     * @return void
+     */
+    public function testBaseUrlWithAbsoluteUrl(): void
+    {
+        $client = new Client();
+        $client->setBaseUrl('http://example.com');
+
+        $resp = $client->fetch(
+            url: 'http://localhost:8000',
+            method: Client::METHOD_GET
+        );
+
+        if ($resp->getStatusCode() === 200) {
+            $respData = $resp->json();
+            $this->assertEquals($respData['method'], Client::METHOD_GET);
+            $this->assertEquals($respData['url'], 'localhost:8000');
+        } else {
+            echo "Please configure your PHP inbuilt SERVER";
+        }
+    }
+
+    /**
+     * Test base URL with query parameters.
+     * @return void
+     */
+    public function testBaseUrlWithQuery(): void
+    {
+        $client = new Client();
+        $client->setBaseUrl('http://localhost:8000');
+
+        $resp = $client->fetch(
+            url: '',
+            method: Client::METHOD_GET,
+            query: [
+                'name' => 'John Doe',
+                'age' => '30',
+            ]
+        );
+
+        if ($resp->getStatusCode() === 200) {
+            $respData = $resp->json();
+            $this->assertEquals($respData['method'], Client::METHOD_GET);
+            $this->assertEquals(
+                json_encode($respData['query']),
+                json_encode(['name' => 'John Doe', 'age' => '30'])
+            );
+        } else {
+            echo "Please configure your PHP inbuilt SERVER";
+        }
+    }
+
+    /**
+     * Test base URL with trailing slash normalization.
+     * @return void
+     */
+    public function testBaseUrlTrailingSlashNormalization(): void
+    {
+        $client = new Client();
+
+        // Test with trailing slash in base URL
+        $client->setBaseUrl('http://localhost:8000/');
+        $resp = $client->fetch(
+            url: '/redirect',
+            method: Client::METHOD_GET
+        );
+
+        if ($resp->getStatusCode() === 200) {
+            $respData = $resp->json();
+            $this->assertEquals($respData['page'], "redirectedPage");
+        } else {
+            echo "Please configure your PHP inbuilt SERVER";
+        }
+    }
+
+    /**
      * Data provider for testFetch
      * @return array<string, array<mixed>>
      */

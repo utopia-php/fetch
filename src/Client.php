@@ -39,10 +39,10 @@ class Client
 
     protected string $baseUrl = '';
 
-    public function setBaseUrl(string $baseUrl): static
+    public function setBaseUrl(string $baseUrl): self
     {
         $this->baseUrl = $baseUrl;
-        return static;
+        return $this;
     }
 
     public function getBaseUrl(): string
@@ -140,7 +140,7 @@ class Client
      *
      * @param array<int> $flags
      * @return self
-    */
+     */
     public function setJsonEncodeFlags(array $flags): self
     {
         $this->jsonEncodeFlags = implode('|', $flags);
