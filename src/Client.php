@@ -39,9 +39,10 @@ class Client
 
     protected string $baseUrl = '';
 
-    public function setBaseUrl(string $baseUrl): void
+    public function setBaseUrl(string $baseUrl): static
     {
         $this->baseUrl = $baseUrl;
+        return static;
     }
 
     public function getBaseUrl(): string
@@ -260,7 +261,9 @@ class Client
         ?int $timeoutMs = null,
         ?int $connectTimeoutMs = null,
     ): Response {
-        $url = "{$this->baseUrl}{$url}";
+        if (!empty($this->baseUrl) && !preg_match('~^https?://~i', $url)) {
+            $url = rtrim($this->baseUrl, '/') . '/' . ltrim($url, '/');
+        }
 
         if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
             throw new Exception("Unsupported HTTP method");
