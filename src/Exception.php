@@ -12,7 +12,7 @@ class Exception extends \Exception
     {
         parent::__construct($message); // Call the parent constructor
     }
-    public function __toString()
+    public function __toString(): string
     {
         return __CLASS__ . " {$this->message}\n"; // Return the class name, code and message
     }
