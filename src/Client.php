@@ -49,6 +49,29 @@ class Client
     }
 
     /**
+     * Remove a specific header.
+     *
+     * @param string $key
+     * @return self
+     */
+    public function removeHeader(string $key): self
+    {
+        unset($this->headers[strtolower($key)]);
+        return $this;
+    }
+
+    /**
+     * Clear all headers.
+     *
+     * @return self
+     */
+    public function clearHeaders(): self
+    {
+        $this->headers = [];
+        return $this;
+    }
+
+    /**
      * Set the request timeout.
      *
      * @param int $timeout Timeout in milliseconds

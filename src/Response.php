@@ -46,7 +46,7 @@ class Response
         $this->headers = $headers;
         $this->statusCode = $statusCode;
     }
-    # Getters
+
     /**
      * This method is used to get the response body as string
      * @return mixed
@@ -55,6 +55,7 @@ class Response
     {
         return $this->body;
     }
+
     /**
      * This method is used to get the response headers
      * @return array<string, string>
@@ -63,6 +64,7 @@ class Response
     {
         return $this->headers;
     }
+
     /**
      * This method is used to get the response status code
      * @return int
@@ -71,19 +73,19 @@ class Response
     {
         return $this->statusCode;
     }
-    // Methods
 
     /**
-      * This method is used to convert the response body to text
-      * @return string
-    */
+     * This method is used to convert the response body to text
+     * @return string
+     */
     public function text(): string
     {
         return \strval($this->body);
     }
+
     /**
-      * This method is used to convert the response body to JSON
-      * @return mixed
+    * This method is used to convert the response body to JSON
+    * @return mixed
     */
     public function json(): mixed
     {
@@ -94,10 +96,10 @@ class Response
         return $data;
     }
 
-    /*
-    * This method is used to convert the response body to blob
-    * @return string
-    */
+    /**
+     * This method is used to convert the response body to blob
+     * @return string
+     */
     public function blob(): string
     {
         $bin = "";
