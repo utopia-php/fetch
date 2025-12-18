@@ -13,7 +13,7 @@ final class ClientTest extends TestCase
      * @dataProvider dataSet
      * @param string $url
      * @param string $method
-     * @param array<string, mixed> $body
+     * @param array<string, mixed>|string|null $body
      * @param array<string, string> $headers
      * @param array<string, mixed> $query
      * @return void
@@ -53,7 +53,7 @@ final class ClientTest extends TestCase
                     if ($headers['content-type'] != "application/x-www-form-urlencoded") {
                         $this->assertSame( // Assert that the body is equal to the response's body
                             $respData['body'],
-                            json_encode($body) // Converting the body to JSON string
+                            is_string($body) ? $body : json_encode($body) // Converting the body to JSON string
                         );
                     }
                 }
@@ -306,6 +306,25 @@ final class ClientTest extends TestCase
                 [
                     'content-type' => 'application/json'
                 ],
+            ],
+            'postSingleLineJsonStringBody' => [
+                'localhost:8000',
+                Client::METHOD_POST,
+                '{"name": "John Doe","age": 30}',
+                [
+                    'content-type' => 'application/json'
+                ]
+            ],
+            'postMultiLineJsonStringBody' => [
+                'localhost:8000',
+                Client::METHOD_POST,
+                '{
+                    "name": "John Doe",
+                    "age": 30
+                }',
+                [
+                    'content-type' => 'application/json'
+                ]
             ],
             'postFormDataBody' => [
                 'localhost:8000',
