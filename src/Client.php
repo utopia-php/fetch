@@ -255,7 +255,7 @@ class Client
      *
      * @param string $url
      * @param string $method
-     * @param array<string>|array<string, mixed> $body
+     * @param array<string>|array<string, mixed>|string|null $body
      * @param array<string, mixed> $query
      * @param ?callable $chunks Optional callback function that receives a Chunk object
      * @param ?int $timeoutMs Optional request timeout in milliseconds
@@ -265,7 +265,7 @@ class Client
     public function fetch(
         string $url,
         string $method = self::METHOD_GET,
-        ?array $body = [],
+        array|string|null $body = [],
         ?array $query = [],
         ?callable $chunks = null,
         ?int $timeoutMs = null,
@@ -275,7 +275,7 @@ class Client
             throw new Exception("Unsupported HTTP method");
         }
 
-        if (isset($this->headers['content-type']) && $body !== null) {
+        if (is_array($body) && isset($this->headers['content-type'])) {
             $body = match ($this->headers['content-type']) {
                 self::CONTENT_TYPE_APPLICATION_JSON => $this->jsonEncode($body),
                 self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => self::flatten($body),
