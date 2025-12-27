@@ -37,6 +37,19 @@ class Client
     private array $retryStatusCodes = [500, 503];
     private mixed $jsonEncodeFlags;
 
+    protected string $baseUrl = '';
+
+    public function setBaseUrl(string $baseUrl): self
+    {
+        $this->baseUrl = $baseUrl;
+        return $this;
+    }
+
+    public function getBaseUrl(): string
+    {
+        return $this->baseUrl;
+    }
+
     /**
      * @param string $key
      * @param string $value
@@ -150,7 +163,7 @@ class Client
      *
      * @param array<int> $flags
      * @return self
-    */
+     */
     public function setJsonEncodeFlags(array $flags): self
     {
         $this->jsonEncodeFlags = implode('|', $flags);
@@ -271,6 +284,10 @@ class Client
         ?int $timeoutMs = null,
         ?int $connectTimeoutMs = null,
     ): Response {
+        if (!empty($this->baseUrl) && !preg_match('~^https?://~i', $url)) {
+            $url = rtrim($this->baseUrl, '/') . '/' . ltrim($url, '/');
+        }
+
         if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
             throw new Exception("Unsupported HTTP method");
         }
