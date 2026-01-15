@@ -28,7 +28,7 @@ final class SwooleTest extends TestCase
         }
 
         $response = $this->adapter->send(
-            url: '127.0.0.1:8001',
+            url: '127.0.0.1:8000',
             method: 'GET',
             body: null,
             headers: [],
@@ -58,7 +58,7 @@ final class SwooleTest extends TestCase
 
         $body = json_encode(['name' => 'John Doe', 'age' => 30]);
         $response = $this->adapter->send(
-            url: '127.0.0.1:8001',
+            url: '127.0.0.1:8000',
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'application/json'],
@@ -88,7 +88,7 @@ final class SwooleTest extends TestCase
         }
 
         $response = $this->adapter->send(
-            url: '127.0.0.1:8001',
+            url: '127.0.0.1:8000',
             method: 'GET',
             body: null,
             headers: [],
@@ -115,7 +115,7 @@ final class SwooleTest extends TestCase
         }
 
         $response = $this->adapter->send(
-            url: '127.0.0.1:8001/redirect',
+            url: '127.0.0.1:8000/redirect',
             method: 'GET',
             body: null,
             headers: [],
@@ -144,7 +144,7 @@ final class SwooleTest extends TestCase
         }
 
         $response = $this->adapter->send(
-            url: '127.0.0.1:8001/redirect',
+            url: '127.0.0.1:8000/redirect',
             method: 'GET',
             body: null,
             headers: [],
@@ -172,7 +172,7 @@ final class SwooleTest extends TestCase
 
         $chunks = [];
         $response = $this->adapter->send(
-            url: '127.0.0.1:8001/chunked',
+            url: '127.0.0.1:8000/chunked',
             method: 'GET',
             body: null,
             headers: [],
@@ -211,7 +211,7 @@ final class SwooleTest extends TestCase
 
         $body = ['name' => 'John Doe', 'age' => '30'];
         $response = $this->adapter->send(
-            url: '127.0.0.1:8001',
+            url: '127.0.0.1:8000',
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'application/x-www-form-urlencoded'],
@@ -238,7 +238,7 @@ final class SwooleTest extends TestCase
         }
 
         $response = $this->adapter->send(
-            url: '127.0.0.1:8001',
+            url: '127.0.0.1:8000',
             method: 'GET',
             body: null,
             headers: [],

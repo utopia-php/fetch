@@ -42,7 +42,7 @@ function setState(array $newState): void
 $curPageName = substr($_SERVER['REQUEST_URI'], strrpos($_SERVER['REQUEST_URI'], "/") + 1);
 
 if ($curPageName == 'redirect') {
-    header('Location: http://localhost:8001/redirectedPage');
+    header('Location: http://localhost:8000/redirectedPage');
     exit;
 } elseif ($curPageName == 'image') {
     $filename = __DIR__."/resources/logo.png";
@@ -169,4 +169,5 @@ $resp = [
     'page' => $curPageName,
 ];
 
+header('Content-Type: application/json');
 echo json_encode($resp);

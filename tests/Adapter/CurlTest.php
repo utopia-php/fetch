@@ -22,7 +22,7 @@ final class CurlTest extends TestCase
     public function testGetRequest(): void
     {
         $response = $this->adapter->send(
-            url: 'localhost:8001',
+            url: 'localhost:8000',
             method: 'GET',
             body: null,
             headers: [],
@@ -48,7 +48,7 @@ final class CurlTest extends TestCase
     {
         $body = json_encode(['name' => 'John Doe', 'age' => 30]);
         $response = $this->adapter->send(
-            url: 'localhost:8001',
+            url: 'localhost:8000',
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'application/json'],
@@ -74,7 +74,7 @@ final class CurlTest extends TestCase
     public function testCustomTimeout(): void
     {
         $response = $this->adapter->send(
-            url: 'localhost:8001',
+            url: 'localhost:8000',
             method: 'GET',
             body: null,
             headers: [],
@@ -97,7 +97,7 @@ final class CurlTest extends TestCase
     public function testRedirectHandling(): void
     {
         $response = $this->adapter->send(
-            url: 'localhost:8001/redirect',
+            url: 'localhost:8000/redirect',
             method: 'GET',
             body: null,
             headers: [],
@@ -122,7 +122,7 @@ final class CurlTest extends TestCase
     public function testRedirectDisabled(): void
     {
         $response = $this->adapter->send(
-            url: 'localhost:8001/redirect',
+            url: 'localhost:8000/redirect',
             method: 'GET',
             body: null,
             headers: [],
@@ -146,7 +146,7 @@ final class CurlTest extends TestCase
     {
         $chunks = [];
         $response = $this->adapter->send(
-            url: 'localhost:8001/chunked',
+            url: 'localhost:8000/chunked',
             method: 'GET',
             body: null,
             headers: [],
@@ -181,7 +181,7 @@ final class CurlTest extends TestCase
     {
         $body = ['name' => 'John Doe', 'age' => '30'];
         $response = $this->adapter->send(
-            url: 'localhost:8001',
+            url: 'localhost:8000',
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'application/x-www-form-urlencoded'],
@@ -204,7 +204,7 @@ final class CurlTest extends TestCase
     public function testResponseHeaders(): void
     {
         $response = $this->adapter->send(
-            url: 'localhost:8001',
+            url: 'localhost:8000',
             method: 'GET',
             body: null,
             headers: [],
@@ -254,7 +254,7 @@ final class CurlTest extends TestCase
         ];
 
         $response = $this->adapter->send(
-            url: 'localhost:8001',
+            url: 'localhost:8000',
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'multipart/form-data'],

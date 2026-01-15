@@ -49,7 +49,6 @@ class Curl implements Adapter
             CURLOPT_URL => $url,
             CURLOPT_HTTPHEADER => $formattedHeaders,
             CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_POSTFIELDS => $body,
             CURLOPT_HEADERFUNCTION => function ($curl, $header) use (&$responseHeaders) {
                 $len = strlen($header);
                 $header = explode(':', $header, 2);
@@ -79,6 +78,10 @@ class Curl implements Adapter
             CURLOPT_FOLLOWLOCATION => $options['allowRedirects'] ?? true,
             CURLOPT_USERAGENT => $options['userAgent'] ?? ''
         ];
+
+        if ($body !== null && $body !== [] && $body !== '') {
+            $curlOptions[CURLOPT_POSTFIELDS] = $body;
+        }
 
         foreach ($curlOptions as $option => $value) {
             curl_setopt($ch, $option, $value);

@@ -128,7 +128,7 @@ class Swoole implements Adapter
                         // If there are files, set form data separately
                         if ($hasFiles) {
                             foreach ($formData as $key => $value) {
-                                $client->addData($key, $value);
+                                $client->addData($value, $key);
                             }
                         } elseif (isset($headers['content-type']) && $headers['content-type'] === 'application/x-www-form-urlencoded') {
                             $client->setData(http_build_query($body));
@@ -156,20 +156,20 @@ class Swoole implements Adapter
 
                     // Swoole doesn't support real-time chunk streaming like cURL
                     // So we receive the full body and send it as chunks if callback is provided
-                    $body = $client->body ?? '';
+                    $currentResponseBody = $client->body ?? '';
 
-                    if ($chunkCallback !== null && !empty($body)) {
+                    if ($chunkCallback !== null && !empty($currentResponseBody)) {
                         // Split body into chunks for callback
                         // For chunked transfer encoding, split by newlines or send as single chunk
                         $chunk = new Chunk(
-                            data: $body,
-                            size: strlen($body),
+                            data: $currentResponseBody,
+                            size: strlen($currentResponseBody),
                             timestamp: microtime(true),
                             index: $chunkIndex++
                         );
                         $chunkCallback($chunk);
                     } else {
-                        $responseBody = $body;
+                        $responseBody = $currentResponseBody;
                     }
 
                     $statusCode = $client->getStatusCode();
@@ -226,7 +226,7 @@ class Swoole implements Adapter
                                             // If there are files, set form data separately
                                             if ($hasFiles) {
                                                 foreach ($formData as $key => $value) {
-                                                    $client->addData($key, $value);
+                                                    $client->addData($value, $key);
                                                 }
                                             } elseif (isset($headers['content-type']) && $headers['content-type'] === 'application/x-www-form-urlencoded') {
                                                 $client->setData(http_build_query($body));
