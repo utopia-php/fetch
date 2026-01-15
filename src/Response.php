@@ -86,13 +86,17 @@ class Response
     /**
     * This method is used to convert the response body to JSON
     * @return mixed
+    * @throws Exception If JSON decoding fails
     */
     public function json(): mixed
     {
         $data = \json_decode($this->body, true);
-        if ($data === null) { // Throw an exception if the data is null
-            throw new \Exception('Error decoding JSON');
+
+        // Check for JSON errors using json_last_error()
+        if (\json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('Error decoding JSON: ' . \json_last_error_msg());
         }
+
         return $data;
     }
 
@@ -102,10 +106,10 @@ class Response
      */
     public function blob(): string
     {
-        $bin = "";
+        $bin = [];
         for ($i = 0, $j = strlen($this->body); $i < $j; $i++) {
-            $bin .= decbin(ord($this->body)) . " ";
+            $bin[] = decbin(ord($this->body[$i]));
         }
-        return $bin;
+        return implode(" ", $bin);
     }
 }

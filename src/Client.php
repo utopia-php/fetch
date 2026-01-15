@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Utopia\Fetch;
+
+use Utopia\Fetch\Adapter\Curl;
 
 /**
  * Client class
@@ -26,7 +30,7 @@ class Client
     /** @var array<string, string> headers */
     private array $headers = [];
     private int $timeout = 15000; // milliseconds (15 seconds)
-    private int $connectTimeout = 60000; // milliseconds (60 seconds)
+    private int $connectTimeout = 5000; // milliseconds (5 seconds)
     private int $maxRedirects = 5;
     private bool $allowRedirects = true;
     private string $userAgent = '';
@@ -36,6 +40,17 @@ class Client
     /** @var array<int> $retryStatusCodes */
     private array $retryStatusCodes = [500, 503];
     private mixed $jsonEncodeFlags;
+    private Adapter $adapter;
+
+    /**
+     * Client constructor
+     *
+     * @param Adapter|null $adapter HTTP adapter to use (defaults to Curl)
+     */
+    public function __construct(?Adapter $adapter = null)
+    {
+        $this->adapter = $adapter ?? new Curl();
+    }
 
     /**
      * @param string $key
@@ -153,7 +168,9 @@ class Client
     */
     public function setJsonEncodeFlags(array $flags): self
     {
-        $this->jsonEncodeFlags = implode('|', $flags);
+        $this->jsonEncodeFlags = array_reduce($flags, function ($carry, $flag) {
+            return $carry | $flag;
+        }, 0);
         return $this;
     }
 
@@ -279,80 +296,32 @@ class Client
             $body = match ($this->headers['content-type']) {
                 self::CONTENT_TYPE_APPLICATION_JSON => $this->jsonEncode($body),
                 self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => self::flatten($body),
-                self::CONTENT_TYPE_GRAPHQL => $body[0],
+                self::CONTENT_TYPE_GRAPHQL => isset($body['query']) && is_string($body['query']) ? $body['query'] : throw new Exception('GraphQL body must contain a "query" field with a string value'),
                 default => $body,
             };
         }
 
-        $formattedHeaders = array_map(function ($key, $value) {
-            return $key . ':' . $value;
-        }, array_keys($this->headers), $this->headers);
-
         if ($query) {
-            $url = rtrim($url, '?') . '?' . http_build_query($query);
+            $separator = str_contains($url, '?') ? '&' : '?';
+            $url = rtrim($url, '?&') . $separator . http_build_query($query);
         }
 
-        $responseHeaders = [];
-        $responseBody = '';
-        $chunkIndex = 0;
-        $ch = curl_init();
-        $curlOptions = [
-            CURLOPT_URL => $url,
-            CURLOPT_HTTPHEADER => $formattedHeaders,
-            CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_POSTFIELDS => $body,
-            CURLOPT_HEADERFUNCTION => function ($curl, $header) use (&$responseHeaders) {
-                $len = strlen($header);
-                $header = explode(':', $header, 2);
-                if (count($header) < 2) {  // ignore invalid headers
-                    return $len;
-                }
-                $responseHeaders[strtolower(trim($header[0]))] = trim($header[1]);
-                return $len;
-            },
-            CURLOPT_WRITEFUNCTION => function ($ch, $data) use ($chunks, &$responseBody, &$chunkIndex) {
-                if ($chunks !== null) {
-                    $chunk = new Chunk(
-                        data: $data,
-                        size: strlen($data),
-                        timestamp: microtime(true),
-                        index: $chunkIndex++
-                    );
-                    $chunks($chunk);
-                } else {
-                    $responseBody .= $data;
-                }
-                return strlen($data);
-            },
-            CURLOPT_CONNECTTIMEOUT_MS => $connectTimeoutMs ?? $this->connectTimeout,
-            CURLOPT_TIMEOUT_MS => $timeoutMs ?? $this->timeout,
-            CURLOPT_MAXREDIRS => $this->maxRedirects,
-            CURLOPT_FOLLOWLOCATION => $this->allowRedirects,
-            CURLOPT_USERAGENT => $this->userAgent
+        $options = [
+            'timeout' => $timeoutMs ?? $this->timeout,
+            'connectTimeout' => $connectTimeoutMs ?? $this->connectTimeout,
+            'maxRedirects' => $this->maxRedirects,
+            'allowRedirects' => $this->allowRedirects,
+            'userAgent' => $this->userAgent
         ];
 
-        // Merge user-defined CURL options with defaults
-        foreach ($curlOptions as $option => $value) {
-            curl_setopt($ch, $option, $value);
-        }
-
-        $sendRequest = function () use ($ch, &$responseHeaders, &$responseBody) {
-            $responseHeaders = [];
-
-            $success = curl_exec($ch);
-            if ($success === false) {
-                $errorMsg = curl_error($ch);
-                curl_close($ch);
-                throw new Exception($errorMsg);
-            }
-
-            $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            return new Response(
-                statusCode: $responseStatusCode,
-                headers: $responseHeaders,
-                body: $responseBody
+        $sendRequest = function () use ($url, $method, $body, $options, $chunks) {
+            return $this->adapter->send(
+                url: $url,
+                method: $method,
+                body: $body,
+                headers: $this->headers,
+                options: $options,
+                chunkCallback: $chunks
             );
         };
 

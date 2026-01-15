@@ -3,9 +3,48 @@
 namespace Utopia\Fetch;
 
 use PHPUnit\Framework\TestCase;
+use Utopia\Fetch\Adapter\Curl;
+use Utopia\Fetch\Adapter\Swoole;
 
 final class ClientTest extends TestCase
 {
+    /**
+     * Test that Client uses Curl adapter by default
+     */
+    public function testDefaultAdapter(): void
+    {
+        $client = new Client();
+        $response = $client->fetch('localhost:8001', Client::METHOD_GET);
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(200, $response->getStatusCode());
+    }
+
+    /**
+     * Test that Client can use a custom adapter
+     */
+    public function testCustomAdapter(): void
+    {
+        $client = new Client(new Curl());
+        $response = $client->fetch('localhost:8001', Client::METHOD_GET);
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(200, $response->getStatusCode());
+    }
+
+    /**
+     * Test that Client works with Swoole adapter if available
+     */
+    public function testSwooleAdapter(): void
+    {
+        if (!class_exists('Swoole\Coroutine\Http\Client')) {
+            $this->markTestSkipped('Swoole extension is not installed');
+        }
+
+        $client = new Client(new Swoole());
+        $response = $client->fetch('127.0.0.1:8001', Client::METHOD_GET);
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(200, $response->getStatusCode());
+    }
+
     /**
      * End to end test for Client::fetch
      * Uses the PHP inbuilt server to test the Client::fetch method
@@ -100,7 +139,7 @@ final class ClientTest extends TestCase
             $client = new Client();
             $client->addHeader('Content-type', 'multipart/form-data');
             $resp = $client->fetch(
-                url: 'localhost:8000',
+                url: 'localhost:8001',
                 method: Client::METHOD_POST,
                 body: [
                     'file' => new \CURLFile(strval(realpath($path)), $contentType, $fileName)
@@ -116,7 +155,7 @@ final class ClientTest extends TestCase
             if (isset($respData['method'])) {
                 $this->assertSame($respData['method'], Client::METHOD_POST);
             } // Assert that the method is equal to the response's method
-            $this->assertSame($respData['url'], 'localhost:8000'); // Assert that the url is equal to the response's url
+            $this->assertSame($respData['url'], 'localhost:8001'); // Assert that the url is equal to the response's url
             $this->assertSame(
                 json_encode($respData['query']), // Converting the query to JSON string
                 json_encode([]) // Converting the query to JSON string
@@ -151,7 +190,7 @@ final class ClientTest extends TestCase
         try {
             $client = new Client();
             $resp = $client->fetch(
-                url: 'localhost:8000/' . $type,
+                url: 'localhost:8001/' . $type,
                 method: Client::METHOD_GET,
                 body: [],
                 query: []
@@ -184,7 +223,7 @@ final class ClientTest extends TestCase
         try {
             $client = new Client();
             $resp = $client->fetch(
-                url: 'localhost:8000/redirect',
+                url: 'localhost:8001/redirect',
                 method: Client::METHOD_GET,
                 body: [],
                 query: []
@@ -279,11 +318,11 @@ final class ClientTest extends TestCase
     {
         return [
             'get' => [
-                'localhost:8000',
+                'localhost:8001',
                 Client::METHOD_GET
             ],
             'getWithQuery' => [
-                'localhost:8000',
+                'localhost:8001',
                 Client::METHOD_GET,
                 [],
                 [],
@@ -293,11 +332,11 @@ final class ClientTest extends TestCase
                 ],
             ],
             'postNoBody' => [
-                'localhost:8000',
+                'localhost:8001',
                 Client::METHOD_POST
             ],
             'postJsonBody' => [
-                'localhost:8000',
+                'localhost:8001',
                 Client::METHOD_POST,
                 [
                     'name' => 'John Doe',
@@ -308,7 +347,7 @@ final class ClientTest extends TestCase
                 ],
             ],
             'postSingleLineJsonStringBody' => [
-                'localhost:8000',
+                'localhost:8001',
                 Client::METHOD_POST,
                 '{"name": "John Doe","age": 30}',
                 [
@@ -316,7 +355,7 @@ final class ClientTest extends TestCase
                 ]
             ],
             'postMultiLineJsonStringBody' => [
-                'localhost:8000',
+                'localhost:8001',
                 Client::METHOD_POST,
                 '{
                     "name": "John Doe",
@@ -327,7 +366,7 @@ final class ClientTest extends TestCase
                 ]
             ],
             'postFormDataBody' => [
-                'localhost:8000',
+                'localhost:8001',
                 Client::METHOD_POST,
                 [
                     'name' => 'John Doe',
@@ -390,14 +429,14 @@ final class ClientTest extends TestCase
         $this->assertSame(3, $client->getMaxRetries());
         $this->assertSame(1000, $client->getRetryDelay());
 
-        $res = $client->fetch('localhost:8000/mock-retry');
+        $res = $client->fetch('localhost:8001/mock-retry');
         $this->assertSame(200, $res->getStatusCode());
 
         unlink(__DIR__ . '/state.json');
 
         // Test if we get a 500 error if we go under the server's max retries
         $client->setMaxRetries(1);
-        $res = $client->fetch('localhost:8000/mock-retry');
+        $res = $client->fetch('localhost:8001/mock-retry');
         $this->assertSame(503, $res->getStatusCode());
 
         unlink(__DIR__ . '/state.json');
@@ -414,7 +453,7 @@ final class ClientTest extends TestCase
         $client->setRetryDelay(3000);
         $now = microtime(true);
 
-        $res = $client->fetch('localhost:8000/mock-retry');
+        $res = $client->fetch('localhost:8001/mock-retry');
         $this->assertGreaterThan($now + 3.0, microtime(true));
         $this->assertSame(200, $res->getStatusCode());
         unlink(__DIR__ . '/state.json');
@@ -432,7 +471,7 @@ final class ClientTest extends TestCase
         $client->setRetryStatusCodes([401]);
         $now = microtime(true);
 
-        $res = $client->fetch('localhost:8000/mock-retry-401');
+        $res = $client->fetch('localhost:8001/mock-retry-401');
         $this->assertSame(200, $res->getStatusCode());
         $this->assertGreaterThan($now + 3.0, microtime(true));
         unlink(__DIR__ . '/state.json');
@@ -449,7 +488,7 @@ final class ClientTest extends TestCase
         $lastChunk = null;
 
         $response = $client->fetch(
-            url: 'localhost:8000/chunked',
+            url: 'localhost:8001/chunked',
             method: Client::METHOD_GET,
             chunks: function (Chunk $chunk) use (&$chunks, &$lastChunk) {
                 $chunks[] = $chunk;
@@ -483,7 +522,7 @@ final class ClientTest extends TestCase
 
         $chunks = [];
         $response = $client->fetch(
-            url: 'localhost:8000/chunked-json',
+            url: 'localhost:8001/chunked-json',
             method: Client::METHOD_POST,
             body: ['test' => 'data'],
             chunks: function (Chunk $chunk) use (&$chunks) {
@@ -517,7 +556,7 @@ final class ClientTest extends TestCase
         $errorChunk = null;
 
         $response = $client->fetch(
-            url: 'localhost:8000/error',
+            url: 'localhost:8001/error',
             method: Client::METHOD_GET,
             chunks: function (Chunk $chunk) use (&$errorChunk) {
                 if ($errorChunk === null) {
@@ -545,7 +584,7 @@ final class ClientTest extends TestCase
         $errorMessages = [];
 
         $response = $client->fetch(
-            url: 'localhost:8000/chunked-error',
+            url: 'localhost:8001/chunked-error',
             method: Client::METHOD_GET,
             chunks: function (Chunk $chunk) use (&$chunks, &$errorMessages) {
                 $chunks[] = $chunk;
