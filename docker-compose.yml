@@ -1,0 +1,10 @@
+services:
+    php:
+        image: fetch-dev
+        build:
+            context: .
+        ports:
+            - 8000:8000
+        volumes:
+            - ./tests:/code/tests
+            - ./src:/code/src

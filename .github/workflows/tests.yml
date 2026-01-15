@@ -1,8 +1,8 @@
 name: "Tests"
 
-on: [ pull_request ]
+on: [pull_request]
 jobs:
-  lint:
+  tests:
     name: Tests
     runs-on: ubuntu-latest
 
@@ -13,11 +13,24 @@ jobs:
           fetch-depth: 2
 
       - run: git checkout HEAD^2
-      
-      - name: Install dependencies
-        run: composer install --profile --ignore-platform-reqs 
-        
-      - name: Run Tests
-        run: php -S localhost:8000 tests/router.php &
-          composer test
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: false
+          tags: fetch-dev
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start Server
+        run: |
+          docker compose up -d
+          sleep 5
+
+      - name: Run Tests
+        run: docker compose exec -T php vendor/bin/phpunit --configuration phpunit.xml
