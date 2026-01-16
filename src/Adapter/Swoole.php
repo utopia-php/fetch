@@ -31,13 +31,20 @@ class Swoole implements Adapter
     private array $config;
 
     /**
+     * @var bool
+     */
+    private bool $coroutines;
+
+    /**
      * Create a new Swoole adapter
      *
      * @param array<string, mixed> $config Custom Swoole client options (passed to $client->set())
+     * @param bool $coroutines If true, automatically wraps requests in a coroutine scheduler when not already in a coroutine context. Set to false when running inside a Swoole server or managing coroutines manually.
      */
-    public function __construct(array $config = [])
+    public function __construct(array $config = [], bool $coroutines = true)
     {
         $this->config = $config;
+        $this->coroutines = $coroutines;
     }
 
     /**
@@ -158,6 +165,145 @@ class Swoole implements Adapter
     }
 
     /**
+     * Execute the HTTP request
+     *
+     * @param string $url
+     * @param string $method
+     * @param mixed $body
+     * @param array<string, string> $headers
+     * @param array<string, mixed> $options
+     * @param callable|null $chunkCallback
+     * @return Response
+     * @throws Exception
+     */
+    private function executeRequest(
+        string $url,
+        string $method,
+        mixed $body,
+        array $headers,
+        array $options,
+        ?callable $chunkCallback
+    ): Response {
+        if (!preg_match('~^https?://~i', $url)) {
+            $url = 'http://' . $url;
+        }
+
+        $parsedUrl = parse_url($url);
+        if ($parsedUrl === false) {
+            throw new Exception('Invalid URL');
+        }
+
+        $host = $parsedUrl['host'] ?? 'localhost';
+        $port = $parsedUrl['port'] ?? (isset($parsedUrl['scheme']) && $parsedUrl['scheme'] === 'https' ? 443 : 80);
+        $path = $parsedUrl['path'] ?? '/';
+        $query = $parsedUrl['query'] ?? '';
+        $ssl = ($parsedUrl['scheme'] ?? 'http') === 'https';
+
+        if ($ssl && $port === 80) {
+            $port = 443;
+        }
+
+        if ($query !== '') {
+            $path .= '?' . $query;
+        }
+
+        $client = $this->getClient($host, $port, $ssl);
+
+        $timeout = ($options['timeout'] ?? 15000) / 1000;
+        $connectTimeout = ($options['connectTimeout'] ?? 60000) / 1000;
+        $maxRedirects = $options['maxRedirects'] ?? 5;
+        $allowRedirects = $options['allowRedirects'] ?? true;
+        $userAgent = $options['userAgent'] ?? '';
+
+        $client->set($this->buildClientSettings($timeout, $connectTimeout));
+
+        $client->setMethod($method);
+
+        $allHeaders = $headers;
+        if ($userAgent !== '') {
+            $allHeaders['User-Agent'] = $userAgent;
+        }
+
+        if (!empty($allHeaders)) {
+            $client->setHeaders($allHeaders);
+        }
+
+        $this->configureBody($client, $body, $headers);
+
+        $responseBody = '';
+        $chunkIndex = 0;
+
+        $redirectCount = 0;
+        do {
+            $success = $client->execute($path);
+
+            if (!$success) {
+                $errorCode = $client->errCode;
+                $errorMsg = socket_strerror($errorCode);
+                $this->closeClient($host, $port, $ssl);
+                throw new Exception("Request failed: {$errorMsg} (Code: {$errorCode})");
+            }
+
+            $currentResponseBody = $client->body ?? '';
+
+            if ($chunkCallback !== null && !empty($currentResponseBody)) {
+                $chunk = new Chunk(
+                    data: $currentResponseBody,
+                    size: strlen($currentResponseBody),
+                    timestamp: microtime(true),
+                    index: $chunkIndex++
+                );
+                $chunkCallback($chunk);
+            } else {
+                $responseBody = $currentResponseBody;
+            }
+
+            $statusCode = $client->getStatusCode();
+
+            if ($allowRedirects && in_array($statusCode, [301, 302, 303, 307, 308]) && $redirectCount < $maxRedirects) {
+                $location = $client->headers['location'] ?? $client->headers['Location'] ?? null;
+                if ($location !== null) {
+                    $redirectCount++;
+                    if (strpos($location, 'http') === 0) {
+                        $parsedLocation = parse_url($location);
+                        $newHost = $parsedLocation['host'] ?? $host;
+                        $newPort = $parsedLocation['port'] ?? (isset($parsedLocation['scheme']) && $parsedLocation['scheme'] === 'https' ? 443 : 80);
+                        $newSsl = ($parsedLocation['scheme'] ?? 'http') === 'https';
+                        $path = ($parsedLocation['path'] ?? '/') . (isset($parsedLocation['query']) ? '?' . $parsedLocation['query'] : '');
+
+                        if ($newHost !== $host || $newPort !== $port || $newSsl !== $ssl) {
+                            $host = $newHost;
+                            $port = $newPort;
+                            $ssl = $newSsl;
+                            $client = $this->getClient($host, $port, $ssl);
+                            $client->set($this->buildClientSettings($timeout, $connectTimeout));
+                            $client->setMethod($method);
+                            if (!empty($allHeaders)) {
+                                $client->setHeaders($allHeaders);
+                            }
+                            $this->configureBody($client, $body, $headers);
+                        }
+                    } else {
+                        $path = $location;
+                    }
+                    continue;
+                }
+            }
+
+            break;
+        } while (true);
+
+        $responseHeaders = array_change_key_case($client->headers ?? [], CASE_LOWER);
+        $responseStatusCode = $client->getStatusCode();
+
+        return new Response(
+            statusCode: $responseStatusCode,
+            headers: $responseHeaders,
+            body: $responseBody
+        );
+    }
+
+    /**
      * Send an HTTP request using Swoole
      *
      * @param string $url The URL to send the request to
@@ -181,138 +327,22 @@ class Swoole implements Adapter
             throw new Exception('Swoole extension is not installed');
         }
 
+        // If coroutines are disabled or we're already in a coroutine, execute directly
+        if (!$this->coroutines || Coroutine::getCid() > 0) {
+            return $this->executeRequest($url, $method, $body, $headers, $options, $chunkCallback);
+        }
+
+        // Wrap in coroutine scheduler
         $response = null;
         $exception = null;
 
-        $executeRequest = function () use ($url, $method, $body, $headers, $options, $chunkCallback, &$response, &$exception) {
+        \Swoole\Coroutine\run(function () use ($url, $method, $body, $headers, $options, $chunkCallback, &$response, &$exception) {
             try {
-                if (!preg_match('~^https?://~i', $url)) {
-                    $url = 'http://' . $url;
-                }
-
-                $parsedUrl = parse_url($url);
-                if ($parsedUrl === false) {
-                    throw new Exception('Invalid URL');
-                }
-
-                $host = $parsedUrl['host'] ?? 'localhost';
-                $port = $parsedUrl['port'] ?? (isset($parsedUrl['scheme']) && $parsedUrl['scheme'] === 'https' ? 443 : 80);
-                $path = $parsedUrl['path'] ?? '/';
-                $query = $parsedUrl['query'] ?? '';
-                $ssl = ($parsedUrl['scheme'] ?? 'http') === 'https';
-
-                if ($ssl && $port === 80) {
-                    $port = 443;
-                }
-
-                if ($query !== '') {
-                    $path .= '?' . $query;
-                }
-
-                $client = $this->getClient($host, $port, $ssl);
-
-                $timeout = ($options['timeout'] ?? 15000) / 1000;
-                $connectTimeout = ($options['connectTimeout'] ?? 60000) / 1000;
-                $maxRedirects = $options['maxRedirects'] ?? 5;
-                $allowRedirects = $options['allowRedirects'] ?? true;
-                $userAgent = $options['userAgent'] ?? '';
-
-                $client->set($this->buildClientSettings($timeout, $connectTimeout));
-
-                $client->setMethod($method);
-
-                $allHeaders = $headers;
-                if ($userAgent !== '') {
-                    $allHeaders['User-Agent'] = $userAgent;
-                }
-
-                if (!empty($allHeaders)) {
-                    $client->setHeaders($allHeaders);
-                }
-
-                $this->configureBody($client, $body, $headers);
-
-                $responseBody = '';
-                $chunkIndex = 0;
-
-                $redirectCount = 0;
-                do {
-                    $success = $client->execute($path);
-
-                    if (!$success) {
-                        $errorCode = $client->errCode;
-                        $errorMsg = socket_strerror($errorCode);
-                        $this->closeClient($host, $port, $ssl);
-                        throw new Exception("Request failed: {$errorMsg} (Code: {$errorCode})");
-                    }
-
-                    $currentResponseBody = $client->body ?? '';
-
-                    if ($chunkCallback !== null && !empty($currentResponseBody)) {
-                        $chunk = new Chunk(
-                            data: $currentResponseBody,
-                            size: strlen($currentResponseBody),
-                            timestamp: microtime(true),
-                            index: $chunkIndex++
-                        );
-                        $chunkCallback($chunk);
-                    } else {
-                        $responseBody = $currentResponseBody;
-                    }
-
-                    $statusCode = $client->getStatusCode();
-
-                    if ($allowRedirects && in_array($statusCode, [301, 302, 303, 307, 308]) && $redirectCount < $maxRedirects) {
-                        $location = $client->headers['location'] ?? $client->headers['Location'] ?? null;
-                        if ($location !== null) {
-                            $redirectCount++;
-                            if (strpos($location, 'http') === 0) {
-                                $parsedLocation = parse_url($location);
-                                $newHost = $parsedLocation['host'] ?? $host;
-                                $newPort = $parsedLocation['port'] ?? (isset($parsedLocation['scheme']) && $parsedLocation['scheme'] === 'https' ? 443 : 80);
-                                $newSsl = ($parsedLocation['scheme'] ?? 'http') === 'https';
-                                $path = ($parsedLocation['path'] ?? '/') . (isset($parsedLocation['query']) ? '?' . $parsedLocation['query'] : '');
-
-                                if ($newHost !== $host || $newPort !== $port || $newSsl !== $ssl) {
-                                    $host = $newHost;
-                                    $port = $newPort;
-                                    $ssl = $newSsl;
-                                    $client = $this->getClient($host, $port, $ssl);
-                                    $client->set($this->buildClientSettings($timeout, $connectTimeout));
-                                    $client->setMethod($method);
-                                    if (!empty($allHeaders)) {
-                                        $client->setHeaders($allHeaders);
-                                    }
-                                    $this->configureBody($client, $body, $headers);
-                                }
-                            } else {
-                                $path = $location;
-                            }
-                            continue;
-                        }
-                    }
-
-                    break;
-                } while (true);
-
-                $responseHeaders = array_change_key_case($client->headers ?? [], CASE_LOWER);
-                $responseStatusCode = $client->getStatusCode();
-
-                $response = new Response(
-                    statusCode: $responseStatusCode,
-                    headers: $responseHeaders,
-                    body: $responseBody
-                );
+                $response = $this->executeRequest($url, $method, $body, $headers, $options, $chunkCallback);
             } catch (Throwable $e) {
                 $exception = $e;
             }
-        };
-
-        if (Coroutine::getCid() > 0) {
-            $executeRequest();
-        } else {
-            \Swoole\Coroutine\run($executeRequest);
-        }
+        });
 
         if ($exception !== null) {
             throw new Exception($exception->getMessage());
