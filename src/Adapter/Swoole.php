@@ -70,7 +70,11 @@ class Swoole implements Adapter
         bool $websocketCompression = false,
         int $lowaterMark = 0,
     ) {
-        $this->coroutines = $coroutines;
+        if ($coroutines && !class_exists(CoClient::class)) {
+            $this->coroutines = false;
+        } else {
+            $this->coroutines = $coroutines;
+        }
 
         $this->config['keep_alive'] = $keepAlive;
         $this->config['socket_buffer_size'] = $socketBufferSize;
