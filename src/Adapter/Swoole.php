@@ -28,7 +28,7 @@ class Swoole implements Adapter
     /**
      * @var array<string, mixed>
      */
-    private array $config;
+    private array $config = [];
 
     /**
      * @var bool
@@ -38,13 +38,64 @@ class Swoole implements Adapter
     /**
      * Create a new Swoole adapter
      *
-     * @param array<string, mixed> $config Custom Swoole client options (passed to $client->set())
-     * @param bool $coroutines If true, automatically wraps requests in a coroutine scheduler when not already in a coroutine context. Set to false when running inside a Swoole server or managing coroutines manually.
+     * @param bool $coroutines If true, automatically wraps requests in a coroutine scheduler when not already in a coroutine context. Set to false when running inside a Swoole server.
+     * @param bool $keepAlive Enable HTTP keep-alive for connection reuse
+     * @param int $socketBufferSize Socket buffer size in bytes
+     * @param bool $httpCompression Enable HTTP compression (gzip, br)
+     * @param bool $sslVerifyPeer Verify the peer's SSL certificate
+     * @param string|null $sslHostName Expected SSL hostname for verification
+     * @param string|null $sslCafile Path to CA certificate file
+     * @param bool $sslAllowSelfSigned Allow self-signed SSL certificates
+     * @param int $packageMaxLength Maximum package length in bytes
+     * @param bool $websocketMask Enable WebSocket masking (for WebSocket connections)
+     * @param string|null $bindAddress Local address to bind to
+     * @param int|null $bindPort Local port to bind to
+     * @param bool $websocketCompression Enable WebSocket compression
+     * @param int $lowaterMark Low water mark for write buffer
      */
-    public function __construct(array $config = [], bool $coroutines = true)
-    {
-        $this->config = $config;
+    public function __construct(
+        bool $coroutines = true,
+        bool $keepAlive = true,
+        int $socketBufferSize = 1048576,
+        bool $httpCompression = true,
+        bool $sslVerifyPeer = true,
+        ?string $sslHostName = null,
+        ?string $sslCafile = null,
+        bool $sslAllowSelfSigned = false,
+        int $packageMaxLength = 2097152,
+        bool $websocketMask = true,
+        ?string $bindAddress = null,
+        ?int $bindPort = null,
+        bool $websocketCompression = false,
+        int $lowaterMark = 0,
+    ) {
         $this->coroutines = $coroutines;
+
+        $this->config['keep_alive'] = $keepAlive;
+        $this->config['socket_buffer_size'] = $socketBufferSize;
+        $this->config['http_compression'] = $httpCompression;
+        $this->config['ssl_verify_peer'] = $sslVerifyPeer;
+        $this->config['ssl_allow_self_signed'] = $sslAllowSelfSigned;
+        $this->config['package_max_length'] = $packageMaxLength;
+        $this->config['websocket_mask'] = $websocketMask;
+        $this->config['websocket_compression'] = $websocketCompression;
+        $this->config['lowwater_mark'] = $lowaterMark;
+
+        if ($sslHostName !== null) {
+            $this->config['ssl_host_name'] = $sslHostName;
+        }
+
+        if ($sslCafile !== null) {
+            $this->config['ssl_cafile'] = $sslCafile;
+        }
+
+        if ($bindAddress !== null) {
+            $this->config['bind_address'] = $bindAddress;
+        }
+
+        if ($bindPort !== null) {
+            $this->config['bind_port'] = $bindPort;
+        }
     }
 
     /**
@@ -154,14 +205,10 @@ class Swoole implements Adapter
      */
     private function buildClientSettings(float $timeout, float $connectTimeout): array
     {
-        $defaults = [
+        return array_merge($this->config, [
             'timeout' => $timeout,
             'connect_timeout' => $connectTimeout,
-            'keep_alive' => true,
-        ];
-
-        // User config takes precedence
-        return array_merge($defaults, $this->config);
+        ]);
     }
 
     /**

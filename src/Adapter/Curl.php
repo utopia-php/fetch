@@ -22,16 +22,78 @@ class Curl implements Adapter
     /**
      * @var array<int, mixed>
      */
-    private array $config;
+    private array $config = [];
 
     /**
      * Create a new Curl adapter
      *
-     * @param array<int, mixed> $config Custom cURL options (CURLOPT_* constants as keys)
+     * @param bool $sslVerifyPeer Verify the peer's SSL certificate
+     * @param bool $sslVerifyHost Verify the host's SSL certificate (2 = verify, 0 = don't verify)
+     * @param string|null $sslCertificate Path to SSL certificate file
+     * @param string|null $sslKey Path to SSL private key file
+     * @param string|null $caInfo Path to CA bundle file
+     * @param string|null $caPath Path to directory containing CA certificates
+     * @param string|null $proxy Proxy URL (e.g., "http://proxy:8080")
+     * @param string|null $proxyUserPwd Proxy authentication (username:password)
+     * @param int $proxyType Proxy type (CURLPROXY_HTTP, CURLPROXY_SOCKS5, etc.)
+     * @param int $httpVersion HTTP version (CURL_HTTP_VERSION_1_1, CURL_HTTP_VERSION_2_0, etc.)
+     * @param bool $tcpKeepAlive Enable TCP keep-alive
+     * @param int $tcpKeepIdle TCP keep-alive idle time in seconds
+     * @param int $tcpKeepInterval TCP keep-alive interval in seconds
+     * @param int $bufferSize Buffer size for reading response
+     * @param bool $verbose Enable verbose output for debugging
      */
-    public function __construct(array $config = [])
-    {
-        $this->config = $config;
+    public function __construct(
+        bool $sslVerifyPeer = true,
+        bool $sslVerifyHost = true,
+        ?string $sslCertificate = null,
+        ?string $sslKey = null,
+        ?string $caInfo = null,
+        ?string $caPath = null,
+        ?string $proxy = null,
+        ?string $proxyUserPwd = null,
+        int $proxyType = CURLPROXY_HTTP,
+        int $httpVersion = CURL_HTTP_VERSION_NONE,
+        bool $tcpKeepAlive = false,
+        int $tcpKeepIdle = 60,
+        int $tcpKeepInterval = 60,
+        int $bufferSize = 16384,
+        bool $verbose = false,
+    ) {
+        $this->config[CURLOPT_SSL_VERIFYPEER] = $sslVerifyPeer;
+        $this->config[CURLOPT_SSL_VERIFYHOST] = $sslVerifyHost ? 2 : 0;
+
+        if ($sslCertificate !== null) {
+            $this->config[CURLOPT_SSLCERT] = $sslCertificate;
+        }
+
+        if ($sslKey !== null) {
+            $this->config[CURLOPT_SSLKEY] = $sslKey;
+        }
+
+        if ($caInfo !== null) {
+            $this->config[CURLOPT_CAINFO] = $caInfo;
+        }
+
+        if ($caPath !== null) {
+            $this->config[CURLOPT_CAPATH] = $caPath;
+        }
+
+        if ($proxy !== null) {
+            $this->config[CURLOPT_PROXY] = $proxy;
+            $this->config[CURLOPT_PROXYTYPE] = $proxyType;
+
+            if ($proxyUserPwd !== null) {
+                $this->config[CURLOPT_PROXYUSERPWD] = $proxyUserPwd;
+            }
+        }
+
+        $this->config[CURLOPT_HTTP_VERSION] = $httpVersion;
+        $this->config[CURLOPT_TCP_KEEPALIVE] = $tcpKeepAlive ? 1 : 0;
+        $this->config[CURLOPT_TCP_KEEPIDLE] = $tcpKeepIdle;
+        $this->config[CURLOPT_TCP_KEEPINTVL] = $tcpKeepInterval;
+        $this->config[CURLOPT_BUFFERSIZE] = $bufferSize;
+        $this->config[CURLOPT_VERBOSE] = $verbose;
     }
 
     /**
@@ -122,7 +184,7 @@ class Curl implements Adapter
             $curlOptions[CURLOPT_POSTFIELDS] = $body;
         }
 
-        // Merge custom config (user config takes precedence)
+        // Merge adapter config (adapter config takes precedence)
         $curlOptions = $this->config + $curlOptions;
 
         foreach ($curlOptions as $option => $value) {
