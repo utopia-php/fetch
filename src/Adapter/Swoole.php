@@ -26,6 +26,21 @@ class Swoole implements Adapter
     private array $clients = [];
 
     /**
+     * @var array<string, mixed>
+     */
+    private array $config;
+
+    /**
+     * Create a new Swoole adapter
+     *
+     * @param array<string, mixed> $config Custom Swoole client options (passed to $client->set())
+     */
+    public function __construct(array $config = [])
+    {
+        $this->config = $config;
+    }
+
+    /**
      * Check if Swoole is available
      *
      * @return bool
@@ -124,6 +139,25 @@ class Swoole implements Adapter
     }
 
     /**
+     * Build client settings by merging defaults with custom config
+     *
+     * @param float $timeout
+     * @param float $connectTimeout
+     * @return array<string, mixed>
+     */
+    private function buildClientSettings(float $timeout, float $connectTimeout): array
+    {
+        $defaults = [
+            'timeout' => $timeout,
+            'connect_timeout' => $connectTimeout,
+            'keep_alive' => true,
+        ];
+
+        // User config takes precedence
+        return array_merge($defaults, $this->config);
+    }
+
+    /**
      * Send an HTTP request using Swoole
      *
      * @param string $url The URL to send the request to
@@ -183,11 +217,7 @@ class Swoole implements Adapter
                 $allowRedirects = $options['allowRedirects'] ?? true;
                 $userAgent = $options['userAgent'] ?? '';
 
-                $client->set([
-                    'timeout' => $timeout,
-                    'connect_timeout' => $connectTimeout,
-                    'keep_alive' => true,
-                ]);
+                $client->set($this->buildClientSettings($timeout, $connectTimeout));
 
                 $client->setMethod($method);
 
@@ -248,11 +278,7 @@ class Swoole implements Adapter
                                     $port = $newPort;
                                     $ssl = $newSsl;
                                     $client = $this->getClient($host, $port, $ssl);
-                                    $client->set([
-                                        'timeout' => $timeout,
-                                        'connect_timeout' => $connectTimeout,
-                                        'keep_alive' => true,
-                                    ]);
+                                    $client->set($this->buildClientSettings($timeout, $connectTimeout));
                                     $client->setMethod($method);
                                     if (!empty($allHeaders)) {
                                         $client->setHeaders($allHeaders);

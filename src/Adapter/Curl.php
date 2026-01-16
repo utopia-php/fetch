@@ -20,6 +20,21 @@ class Curl implements Adapter
     private ?CurlHandle $handle = null;
 
     /**
+     * @var array<int, mixed>
+     */
+    private array $config;
+
+    /**
+     * Create a new Curl adapter
+     *
+     * @param array<int, mixed> $config Custom cURL options (CURLOPT_* constants as keys)
+     */
+    public function __construct(array $config = [])
+    {
+        $this->config = $config;
+    }
+
+    /**
      * Get or create the cURL handle
      *
      * @return CurlHandle
@@ -101,6 +116,9 @@ class Curl implements Adapter
         if ($body !== null && $body !== [] && $body !== '') {
             $curlOptions[CURLOPT_POSTFIELDS] = $body;
         }
+
+        // Merge custom config (user config takes precedence)
+        $curlOptions = $this->config + $curlOptions;
 
         foreach ($curlOptions as $option => $value) {
             curl_setopt($ch, $option, $value);
