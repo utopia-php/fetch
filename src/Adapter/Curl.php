@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Utopia\Fetch\Adapter;
 
+use CurlHandle;
 use Utopia\Fetch\Adapter;
 use Utopia\Fetch\Chunk;
 use Utopia\Fetch\Exception;
@@ -16,6 +17,24 @@ use Utopia\Fetch\Response;
  */
 class Curl implements Adapter
 {
+    private ?CurlHandle $handle = null;
+
+    /**
+     * Get or create the cURL handle
+     *
+     * @return CurlHandle
+     */
+    private function getHandle(): CurlHandle
+    {
+        if ($this->handle === null) {
+            $this->handle = curl_init();
+        } else {
+            curl_reset($this->handle);
+        }
+
+        return $this->handle;
+    }
+
     /**
      * Send an HTTP request using cURL
      *
@@ -44,7 +63,7 @@ class Curl implements Adapter
         $responseBody = '';
         $chunkIndex = 0;
 
-        $ch = curl_init();
+        $ch = $this->getHandle();
         $curlOptions = [
             CURLOPT_URL => $url,
             CURLOPT_HTTPHEADER => $formattedHeaders,
@@ -87,22 +106,29 @@ class Curl implements Adapter
             curl_setopt($ch, $option, $value);
         }
 
-        try {
-            $success = curl_exec($ch);
-            if ($success === false) {
-                $errorMsg = curl_error($ch);
-                throw new Exception($errorMsg);
-            }
+        $success = curl_exec($ch);
+        if ($success === false) {
+            $errorMsg = curl_error($ch);
+            throw new Exception($errorMsg);
+        }
 
-            $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $responseStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            return new Response(
-                statusCode: $responseStatusCode,
-                headers: $responseHeaders,
-                body: $responseBody
-            );
-        } finally {
-            curl_close($ch);
+        return new Response(
+            statusCode: $responseStatusCode,
+            headers: $responseHeaders,
+            body: $responseBody
+        );
+    }
+
+    /**
+     * Close the cURL handle when the adapter is destroyed
+     */
+    public function __destruct()
+    {
+        if ($this->handle !== null) {
+            curl_close($this->handle);
+            $this->handle = null;
         }
     }
 }

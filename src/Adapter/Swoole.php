@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Utopia\Fetch\Adapter;
 
+use CURLFile;
+use Swoole\Coroutine;
+use Swoole\Coroutine\Http\Client as SwooleClient;
+use Throwable;
 use Utopia\Fetch\Adapter;
 use Utopia\Fetch\Chunk;
 use Utopia\Fetch\Exception;
@@ -17,13 +21,106 @@ use Utopia\Fetch\Response;
 class Swoole implements Adapter
 {
     /**
+     * @var array<string, SwooleClient>
+     */
+    private array $clients = [];
+
+    /**
      * Check if Swoole is available
      *
      * @return bool
      */
     public static function isAvailable(): bool
     {
-        return class_exists('Swoole\Coroutine\Http\Client');
+        return class_exists(SwooleClient::class);
+    }
+
+    /**
+     * Get or create a Swoole HTTP client for the given host/port/ssl configuration
+     *
+     * @param string $host
+     * @param int $port
+     * @param bool $ssl
+     * @return SwooleClient
+     */
+    private function getClient(string $host, int $port, bool $ssl): SwooleClient
+    {
+        $key = "{$host}:{$port}:" . ($ssl ? '1' : '0');
+
+        if (!isset($this->clients[$key])) {
+            $this->clients[$key] = new SwooleClient($host, $port, $ssl);
+        }
+
+        return $this->clients[$key];
+    }
+
+    /**
+     * Close and remove a client from the cache
+     *
+     * @param string $host
+     * @param int $port
+     * @param bool $ssl
+     * @return void
+     */
+    private function closeClient(string $host, int $port, bool $ssl): void
+    {
+        $key = "{$host}:{$port}:" . ($ssl ? '1' : '0');
+
+        if (isset($this->clients[$key])) {
+            $this->clients[$key]->close();
+            unset($this->clients[$key]);
+        }
+    }
+
+    /**
+     * Configure body data on the client
+     *
+     * @param SwooleClient $client
+     * @param mixed $body
+     * @param array<string, string> $headers
+     * @return void
+     */
+    private function configureBody(SwooleClient $client, mixed $body, array $headers): void
+    {
+        if ($body === null) {
+            return;
+        }
+
+        if (is_array($body)) {
+            $hasFiles = false;
+            $formData = [];
+
+            foreach ($body as $key => $value) {
+                if ($value instanceof CURLFile || (is_string($value) && str_starts_with($value, '@'))) {
+                    $hasFiles = true;
+                    if ($value instanceof CURLFile) {
+                        $client->addFile(
+                            $value->getFilename(),
+                            $key,
+                            $value->getMimeType() ?: 'application/octet-stream',
+                            $value->getPostFilename() ?: basename($value->getFilename())
+                        );
+                    } elseif (str_starts_with($value, '@')) {
+                        $filePath = substr($value, 1);
+                        $client->addFile($filePath, $key);
+                    }
+                } else {
+                    $formData[$key] = $value;
+                }
+            }
+
+            if ($hasFiles) {
+                foreach ($formData as $key => $value) {
+                    $client->addData($value, $key);
+                }
+            } elseif (isset($headers['content-type']) && $headers['content-type'] === 'application/x-www-form-urlencoded') {
+                $client->setData(http_build_query($body));
+            } else {
+                $client->setData($body);
+            }
+        } else {
+            $client->setData($body);
+        }
     }
 
     /**
@@ -55,7 +152,6 @@ class Swoole implements Adapter
 
         $executeRequest = function () use ($url, $method, $body, $headers, $options, $chunkCallback, &$response, &$exception) {
             try {
-                // Add scheme if missing for proper parsing
                 if (!preg_match('~^https?://~i', $url)) {
                     $url = 'http://' . $url;
                 }
@@ -79,7 +175,7 @@ class Swoole implements Adapter
                     $path .= '?' . $query;
                 }
 
-                $client = new \Swoole\Coroutine\Http\Client($host, $port, $ssl);
+                $client = $this->getClient($host, $port, $ssl);
 
                 $timeout = ($options['timeout'] ?? 15000) / 1000;
                 $connectTimeout = ($options['connectTimeout'] ?? 60000) / 1000;
@@ -90,7 +186,7 @@ class Swoole implements Adapter
                 $client->set([
                     'timeout' => $timeout,
                     'connect_timeout' => $connectTimeout,
-                    'keep_alive' => false,
+                    'keep_alive' => true,
                 ]);
 
                 $client->setMethod($method);
@@ -104,41 +200,7 @@ class Swoole implements Adapter
                     $client->setHeaders($allHeaders);
                 }
 
-                if ($body !== null) {
-                    if (is_array($body)) {
-                        // Check for file uploads in the body
-                        $hasFiles = false;
-                        $formData = [];
-
-                        foreach ($body as $key => $value) {
-                            if ($value instanceof \CURLFile || (is_string($value) && str_starts_with($value, '@'))) {
-                                $hasFiles = true;
-                                // Handle file uploads
-                                if ($value instanceof \CURLFile) {
-                                    $client->addFile($value->getFilename(), $key, $value->getMimeType() ?: 'application/octet-stream', $value->getPostFilename() ?: basename($value->getFilename()));
-                                } elseif (str_starts_with($value, '@')) {
-                                    $filePath = substr($value, 1);
-                                    $client->addFile($filePath, $key);
-                                }
-                            } else {
-                                $formData[$key] = $value;
-                            }
-                        }
-
-                        // If there are files, set form data separately
-                        if ($hasFiles) {
-                            foreach ($formData as $key => $value) {
-                                $client->addData($value, $key);
-                            }
-                        } elseif (isset($headers['content-type']) && $headers['content-type'] === 'application/x-www-form-urlencoded') {
-                            $client->setData(http_build_query($body));
-                        } else {
-                            $client->setData($body);
-                        }
-                    } else {
-                        $client->setData($body);
-                    }
-                }
+                $this->configureBody($client, $body, $headers);
 
                 $responseBody = '';
                 $chunkIndex = 0;
@@ -150,17 +212,13 @@ class Swoole implements Adapter
                     if (!$success) {
                         $errorCode = $client->errCode;
                         $errorMsg = socket_strerror($errorCode);
-                        $client->close();
+                        $this->closeClient($host, $port, $ssl);
                         throw new Exception("Request failed: {$errorMsg} (Code: {$errorCode})");
                     }
 
-                    // Swoole doesn't support real-time chunk streaming like cURL
-                    // So we receive the full body and send it as chunks if callback is provided
                     $currentResponseBody = $client->body ?? '';
 
                     if ($chunkCallback !== null && !empty($currentResponseBody)) {
-                        // Split body into chunks for callback
-                        // For chunked transfer encoding, split by newlines or send as single chunk
                         $chunk = new Chunk(
                             data: $currentResponseBody,
                             size: strlen($currentResponseBody),
@@ -179,67 +237,29 @@ class Swoole implements Adapter
                         if ($location !== null) {
                             $redirectCount++;
                             if (strpos($location, 'http') === 0) {
-                                // Absolute URL redirect - update host, port, SSL, and path
                                 $parsedLocation = parse_url($location);
                                 $newHost = $parsedLocation['host'] ?? $host;
                                 $newPort = $parsedLocation['port'] ?? (isset($parsedLocation['scheme']) && $parsedLocation['scheme'] === 'https' ? 443 : 80);
                                 $newSsl = ($parsedLocation['scheme'] ?? 'http') === 'https';
                                 $path = ($parsedLocation['path'] ?? '/') . (isset($parsedLocation['query']) ? '?' . $parsedLocation['query'] : '');
 
-                                // If host changed, close old client and create new one
                                 if ($newHost !== $host || $newPort !== $port || $newSsl !== $ssl) {
-                                    $client->close();
                                     $host = $newHost;
                                     $port = $newPort;
                                     $ssl = $newSsl;
-                                    $client = new \Swoole\Coroutine\Http\Client($host, $port, $ssl);
+                                    $client = $this->getClient($host, $port, $ssl);
                                     $client->set([
                                         'timeout' => $timeout,
                                         'connect_timeout' => $connectTimeout,
-                                        'keep_alive' => false,
+                                        'keep_alive' => true,
                                     ]);
                                     $client->setMethod($method);
                                     if (!empty($allHeaders)) {
                                         $client->setHeaders($allHeaders);
                                     }
-                                    if ($body !== null) {
-                                        if (is_array($body)) {
-                                            // Check for file uploads in the body
-                                            $hasFiles = false;
-                                            $formData = [];
-
-                                            foreach ($body as $key => $value) {
-                                                if ($value instanceof \CURLFile || (is_string($value) && str_starts_with($value, '@'))) {
-                                                    $hasFiles = true;
-                                                    // Handle file uploads
-                                                    if ($value instanceof \CURLFile) {
-                                                        $client->addFile($value->getFilename(), $key, $value->getMimeType() ?: 'application/octet-stream', $value->getPostFilename() ?: basename($value->getFilename()));
-                                                    } elseif (str_starts_with($value, '@')) {
-                                                        $filePath = substr($value, 1);
-                                                        $client->addFile($filePath, $key);
-                                                    }
-                                                } else {
-                                                    $formData[$key] = $value;
-                                                }
-                                            }
-
-                                            // If there are files, set form data separately
-                                            if ($hasFiles) {
-                                                foreach ($formData as $key => $value) {
-                                                    $client->addData($value, $key);
-                                                }
-                                            } elseif (isset($headers['content-type']) && $headers['content-type'] === 'application/x-www-form-urlencoded') {
-                                                $client->setData(http_build_query($body));
-                                            } else {
-                                                $client->setData($body);
-                                            }
-                                        } else {
-                                            $client->setData($body);
-                                        }
-                                    }
+                                    $this->configureBody($client, $body, $headers);
                                 }
                             } else {
-                                // Relative URL redirect - keep same host/port/SSL
                                 $path = $location;
                             }
                             continue;
@@ -252,24 +272,19 @@ class Swoole implements Adapter
                 $responseHeaders = array_change_key_case($client->headers ?? [], CASE_LOWER);
                 $responseStatusCode = $client->getStatusCode();
 
-                $client->close();
-
                 $response = new Response(
                     statusCode: $responseStatusCode,
                     headers: $responseHeaders,
                     body: $responseBody
                 );
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $exception = $e;
             }
         };
 
-        // Check if we're already in a coroutine context
-        if (\Swoole\Coroutine::getCid() > 0) {
-            // Already in a coroutine, execute directly
+        if (Coroutine::getCid() > 0) {
             $executeRequest();
         } else {
-            // Not in a coroutine, create a new scheduler
             \Swoole\Coroutine\run($executeRequest);
         }
 
@@ -282,5 +297,16 @@ class Swoole implements Adapter
         }
 
         return $response;
+    }
+
+    /**
+     * Close all cached clients when the adapter is destroyed
+     */
+    public function __destruct()
+    {
+        foreach ($this->clients as $client) {
+            $client->close();
+        }
+        $this->clients = [];
     }
 }
