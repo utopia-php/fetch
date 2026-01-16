@@ -7,6 +7,7 @@ namespace Utopia\Fetch\Adapter;
 use CURLFile;
 use Swoole\Coroutine;
 use Swoole\Coroutine\Http\Client as CoClient;
+use Swoole\Http\Client as SyncClient;
 use Throwable;
 use Utopia\Fetch\Adapter;
 use Utopia\Fetch\Chunk;
@@ -105,7 +106,7 @@ class Swoole implements Adapter
      */
     public static function isAvailable(): bool
     {
-        return class_exists(CoClient::class) || class_exists('Swoole\Http\Client');
+        return class_exists(CoClient::class) || class_exists(SyncClient::class);
     }
 
     /**
@@ -125,8 +126,7 @@ class Swoole implements Adapter
                 $this->clients[$key] = new CoClient($host, $port, $ssl);
             } else {
                 /** @var CoClient $client */
-                $class = 'Swoole\Http\Client';
-                $client = new $class($host, $port, $ssl);
+                $client = new SyncClient($host, $port, $ssl);
                 $this->clients[$key] = $client;
             }
         }

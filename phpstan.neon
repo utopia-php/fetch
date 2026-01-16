@@ -6,3 +6,4 @@ parameters:
 	reportUnmatchedIgnoredErrors: false
 	ignoreErrors:
 		- '#Function Swoole\\Coroutine\\run not found\.?#'
+		- '#class Swoole\\Http\\Client not found\.?#i'
