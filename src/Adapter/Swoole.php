@@ -105,8 +105,7 @@ class Swoole implements Adapter
      */
     public static function isAvailable(): bool
     {
-        /** @phpstan-ignore-next-line */
-        return class_exists(CoClient::class) || class_exists(\Swoole\Http\Client::class);
+        return class_exists(CoClient::class) || class_exists('Swoole\Http\Client');
     }
 
     /**
@@ -125,11 +124,9 @@ class Swoole implements Adapter
             if ($this->coroutines) {
                 $this->clients[$key] = new CoClient($host, $port, $ssl);
             } else {
-                /**
-                 * @phpstan-ignore-next-line
-                 * @var CoClient $client
-                 */
-                $client = new \Swoole\Http\Client($host, $port, $ssl);
+                /** @var CoClient $client */
+                $class = 'Swoole\Http\Client';
+                $client = new $class($host, $port, $ssl);
                 $this->clients[$key] = $client;
             }
         }
