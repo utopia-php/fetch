@@ -7,9 +7,9 @@ COPY ./composer.json /src/
 RUN composer update --ignore-platform-reqs --optimize-autoloader \
     --no-plugins --no-scripts --prefer-dist
 
-FROM appwrite/base:0.10.4 AS final
+FROM appwrite/utopia-base:php-8.4-0.2.1 AS final
 
-LABEL maintainer="team@appwrite.io"
+LABEL maintainer="team@utopia.io"
 
 WORKDIR /code
 
