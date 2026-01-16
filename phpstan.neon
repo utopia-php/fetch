@@ -5,5 +5,5 @@ parameters:
 		- tests
 	reportUnmatchedIgnoredErrors: false
 	ignoreErrors:
-		- '#Function Swoole\\Coroutine\\run not found\.?#'
-		- '#class Swoole\\Http\\Client not found\.?#i'
+		- '#Function Swoole\\Coroutine\\run not found#'
+		- '#Instantiated class Swoole\\Http\\Client not found#'
