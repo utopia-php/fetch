@@ -14,7 +14,7 @@ final class ClientTest extends TestCase
     public function testDefaultAdapter(): void
     {
         $client = new Client();
-        $response = $client->fetch('localhost:8000', Client::METHOD_GET);
+        $response = $client->fetch('127.0.0.1:8000', Client::METHOD_GET);
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
     }
@@ -25,7 +25,7 @@ final class ClientTest extends TestCase
     public function testCustomAdapter(): void
     {
         $client = new Client(new Curl());
-        $response = $client->fetch('localhost:8000', Client::METHOD_GET);
+        $response = $client->fetch('127.0.0.1:8000', Client::METHOD_GET);
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
     }
@@ -84,6 +84,7 @@ final class ClientTest extends TestCase
         }
         if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
+            $this->assertIsArray($respData);
             $this->assertSame($respData['method'], $method); // Assert that the method is equal to the response's method
             if ($method != Client::METHOD_GET) {
                 if (empty($body)) { // if body is empty then response body should be an empty string
@@ -102,7 +103,9 @@ final class ClientTest extends TestCase
                 json_encode($respData['query']), // Converting the query to JSON string
                 json_encode($query) // Converting the query to JSON string
             ); // Assert that the args are equal to the response's args
+            $this->assertIsString($respData['headers']);
             $respHeaders = json_decode($respData['headers'], true); // Converting the headers to array
+            $this->assertIsArray($respHeaders);
             $host = $respHeaders['Host'];
             $this->assertSame($host, $url); // Assert that the host is equal to the response's host
 
@@ -114,6 +117,7 @@ final class ClientTest extends TestCase
                     $contentType = $respHeaders['content-type'] ?? null;
                 }
                 if ($contentType !== null) {
+                    $this->assertIsString($contentType);
                     $contentType = explode(';', $contentType)[0];
                     if (!empty($headers)) {
                         $this->assertSame($contentType, $headers['content-type']); // Assert that the content-type is equal to the response's content-type
@@ -141,7 +145,7 @@ final class ClientTest extends TestCase
             $client = new Client();
             $client->addHeader('Content-type', 'multipart/form-data');
             $resp = $client->fetch(
-                url: 'localhost:8000',
+                url: '127.0.0.1:8000',
                 method: Client::METHOD_POST,
                 body: [
                     'file' => new \CURLFile(strval(realpath($path)), $contentType, $fileName)
@@ -154,10 +158,11 @@ final class ClientTest extends TestCase
         }
         if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
+            $this->assertIsArray($respData);
             if (isset($respData['method'])) {
                 $this->assertSame($respData['method'], Client::METHOD_POST);
             } // Assert that the method is equal to the response's method
-            $this->assertSame($respData['url'], 'localhost:8000'); // Assert that the url is equal to the response's url
+            $this->assertSame($respData['url'], '127.0.0.1:8000'); // Assert that the url is equal to the response's url
             $this->assertSame(
                 json_encode($respData['query']), // Converting the query to JSON string
                 json_encode([]) // Converting the query to JSON string
@@ -170,7 +175,9 @@ final class ClientTest extends TestCase
                     'error' => 0
                 ]
             ];
+            $this->assertIsString($respData['files']);
             $resp_files = json_decode($respData['files'], true);
+            $this->assertIsArray($resp_files);
             $this->assertSame($files['file']['name'], $resp_files['file']['name']);
             $this->assertSame($files['file']['full_path'], $resp_files['file']['full_path']);
             $this->assertSame($files['file']['type'], $resp_files['file']['type']);
@@ -192,7 +199,7 @@ final class ClientTest extends TestCase
         try {
             $client = new Client();
             $resp = $client->fetch(
-                url: 'localhost:8000/' . $type,
+                url: '127.0.0.1:8000/' . $type,
                 method: Client::METHOD_GET,
                 body: [],
                 query: []
@@ -225,7 +232,7 @@ final class ClientTest extends TestCase
         try {
             $client = new Client();
             $resp = $client->fetch(
-                url: 'localhost:8000/redirect',
+                url: '127.0.0.1:8000/redirect',
                 method: Client::METHOD_GET,
                 body: [],
                 query: []
@@ -236,6 +243,7 @@ final class ClientTest extends TestCase
         }
         if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
+            $this->assertIsArray($respData);
             $this->assertSame($respData['page'], "redirectedPage"); // Assert that the page is the redirected page
         } else { // If the response is not OK
             echo "Please configure your PHP inbuilt SERVER";
@@ -320,11 +328,11 @@ final class ClientTest extends TestCase
     {
         return [
             'get' => [
-                'localhost:8000',
+                '127.0.0.1:8000',
                 Client::METHOD_GET
             ],
             'getWithQuery' => [
-                'localhost:8000',
+                '127.0.0.1:8000',
                 Client::METHOD_GET,
                 [],
                 [],
@@ -334,11 +342,11 @@ final class ClientTest extends TestCase
                 ],
             ],
             'postNoBody' => [
-                'localhost:8000',
+                '127.0.0.1:8000',
                 Client::METHOD_POST
             ],
             'postJsonBody' => [
-                'localhost:8000',
+                '127.0.0.1:8000',
                 Client::METHOD_POST,
                 [
                     'name' => 'John Doe',
@@ -349,7 +357,7 @@ final class ClientTest extends TestCase
                 ],
             ],
             'postSingleLineJsonStringBody' => [
-                'localhost:8000',
+                '127.0.0.1:8000',
                 Client::METHOD_POST,
                 '{"name": "John Doe","age": 30}',
                 [
@@ -357,7 +365,7 @@ final class ClientTest extends TestCase
                 ]
             ],
             'postMultiLineJsonStringBody' => [
-                'localhost:8000',
+                '127.0.0.1:8000',
                 Client::METHOD_POST,
                 '{
                     "name": "John Doe",
@@ -368,7 +376,7 @@ final class ClientTest extends TestCase
                 ]
             ],
             'postFormDataBody' => [
-                'localhost:8000',
+                '127.0.0.1:8000',
                 Client::METHOD_POST,
                 [
                     'name' => 'John Doe',
@@ -431,14 +439,14 @@ final class ClientTest extends TestCase
         $this->assertSame(3, $client->getMaxRetries());
         $this->assertSame(1000, $client->getRetryDelay());
 
-        $res = $client->fetch('localhost:8000/mock-retry');
+        $res = $client->fetch('127.0.0.1:8000/mock-retry');
         $this->assertSame(200, $res->getStatusCode());
 
         unlink(__DIR__ . '/state.json');
 
         // Test if we get a 500 error if we go under the server's max retries
         $client->setMaxRetries(1);
-        $res = $client->fetch('localhost:8000/mock-retry');
+        $res = $client->fetch('127.0.0.1:8000/mock-retry');
         $this->assertSame(503, $res->getStatusCode());
 
         unlink(__DIR__ . '/state.json');
@@ -455,7 +463,7 @@ final class ClientTest extends TestCase
         $client->setRetryDelay(3000);
         $now = microtime(true);
 
-        $res = $client->fetch('localhost:8000/mock-retry');
+        $res = $client->fetch('127.0.0.1:8000/mock-retry');
         $this->assertGreaterThan($now + 3.0, microtime(true));
         $this->assertSame(200, $res->getStatusCode());
         unlink(__DIR__ . '/state.json');
@@ -473,7 +481,7 @@ final class ClientTest extends TestCase
         $client->setRetryStatusCodes([401]);
         $now = microtime(true);
 
-        $res = $client->fetch('localhost:8000/mock-retry-401');
+        $res = $client->fetch('127.0.0.1:8000/mock-retry-401');
         $this->assertSame(200, $res->getStatusCode());
         $this->assertGreaterThan($now + 3.0, microtime(true));
         unlink(__DIR__ . '/state.json');
@@ -490,7 +498,7 @@ final class ClientTest extends TestCase
         $lastChunk = null;
 
         $response = $client->fetch(
-            url: 'localhost:8000/chunked',
+            url: '127.0.0.1:8000/chunked',
             method: Client::METHOD_GET,
             chunks: function (Chunk $chunk) use (&$chunks, &$lastChunk) {
                 $chunks[] = $chunk;
@@ -524,7 +532,7 @@ final class ClientTest extends TestCase
 
         $chunks = [];
         $response = $client->fetch(
-            url: 'localhost:8000/chunked-json',
+            url: '127.0.0.1:8000/chunked-json',
             method: Client::METHOD_POST,
             body: ['test' => 'data'],
             chunks: function (Chunk $chunk) use (&$chunks) {
@@ -558,7 +566,7 @@ final class ClientTest extends TestCase
         $errorChunk = null;
 
         $response = $client->fetch(
-            url: 'localhost:8000/error',
+            url: '127.0.0.1:8000/error',
             method: Client::METHOD_GET,
             chunks: function (Chunk $chunk) use (&$errorChunk) {
                 if ($errorChunk === null) {
@@ -586,12 +594,12 @@ final class ClientTest extends TestCase
         $errorMessages = [];
 
         $response = $client->fetch(
-            url: 'localhost:8000/chunked-error',
+            url: '127.0.0.1:8000/chunked-error',
             method: Client::METHOD_GET,
             chunks: function (Chunk $chunk) use (&$chunks, &$errorMessages) {
                 $chunks[] = $chunk;
                 $data = json_decode($chunk->getData(), true);
-                if ($data && isset($data['error'])) {
+                if (is_array($data) && isset($data['error'])) {
                     $errorMessages[] = $data['error'];
                 }
             }

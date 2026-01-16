@@ -1,9 +1,9 @@
 parameters:
-	level: 8
+	level: max
 	paths:
 		- src
 		- tests
-	reportUnmatchedIgnoredErrors: false
-	ignoreErrors:
-		- '#Function Swoole\\Coroutine\\run not found#'
-		- '#Instantiated class Swoole\\Http\\Client not found#'
+	scanFiles:
+		- vendor/swoole/ide-helper/src/swoole_library/src/core/Coroutine/functions.php
+	scanDirectories:
+		- vendor/swoole/ide-helper/src/swoole

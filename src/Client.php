@@ -39,7 +39,7 @@ class Client
 
     /** @var array<int> $retryStatusCodes */
     private array $retryStatusCodes = [500, 503];
-    private mixed $jsonEncodeFlags;
+    private ?int $jsonEncodeFlags = null;
     private Adapter $adapter;
 
     /**
@@ -314,7 +314,7 @@ class Client
             'userAgent' => $this->userAgent
         ];
 
-        $sendRequest = function () use ($url, $method, $body, $options, $chunks) {
+        $sendRequest = function () use ($url, $method, $body, $options, $chunks): Response {
             return $this->adapter->send(
                 url: $url,
                 method: $method,
@@ -326,6 +326,7 @@ class Client
         };
 
         if ($this->maxRetries > 0) {
+            /** @var Response $response */
             $response = $this->withRetries($sendRequest);
         } else {
             $response = $sendRequest();

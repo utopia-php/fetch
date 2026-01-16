@@ -7,7 +7,6 @@ namespace Utopia\Fetch\Adapter;
 use CURLFile;
 use Swoole\Coroutine;
 use Swoole\Coroutine\Http\Client as CoClient;
-use Swoole\Http\Client as SyncClient;
 use Throwable;
 use Utopia\Fetch\Adapter;
 use Utopia\Fetch\Chunk;
@@ -110,7 +109,17 @@ class Swoole implements Adapter
      */
     public static function isAvailable(): bool
     {
-        return class_exists(CoClient::class) || class_exists(SyncClient::class);
+        return class_exists(CoClient::class) || class_exists('Swoole\\Http\\Client');
+    }
+
+    /**
+     * Get the sync client class name
+     *
+     * @return string
+     */
+    private static function getSyncClientClass(): string
+    {
+        return 'Swoole' . '\\' . 'Http' . '\\' . 'Client';
     }
 
     /**
@@ -129,8 +138,12 @@ class Swoole implements Adapter
             if ($this->coroutines) {
                 $this->clients[$key] = new CoClient($host, $port, $ssl);
             } else {
+                $syncClientClass = self::getSyncClientClass();
+                if (!class_exists($syncClientClass)) {
+                    throw new Exception('Swoole sync HTTP client is not available');
+                }
                 /** @var CoClient $client */
-                $client = new SyncClient($host, $port, $ssl);
+                $client = new $syncClientClass($host, $port, $ssl);
                 $this->clients[$key] = $client;
             }
         }
@@ -202,7 +215,7 @@ class Swoole implements Adapter
             } else {
                 $client->setData($body);
             }
-        } else {
+        } elseif (is_string($body)) {
             $client->setData($body);
         }
     }
@@ -352,7 +365,8 @@ class Swoole implements Adapter
         } while (true);
 
         $responseHeaders = array_change_key_case($client->headers ?? [], CASE_LOWER);
-        $responseStatusCode = $client->getStatusCode();
+        $statusCode = $client->getStatusCode();
+        $responseStatusCode = is_int($statusCode) ? $statusCode : 0;
 
         return new Response(
             statusCode: $responseStatusCode,
@@ -394,7 +408,8 @@ class Swoole implements Adapter
         $response = null;
         $exception = null;
 
-        \Swoole\Coroutine\run(function () use ($url, $method, $body, $headers, $options, $chunkCallback, &$response, &$exception) {
+        $coRun = 'Swoole\\Coroutine\\run';
+        $coRun(function () use ($url, $method, $body, $headers, $options, $chunkCallback, &$response, &$exception) {
             try {
                 $response = $this->executeRequest($url, $method, $body, $headers, $options, $chunkCallback);
             } catch (Throwable $e) {

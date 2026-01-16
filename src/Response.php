@@ -80,7 +80,19 @@ class Response
      */
     public function text(): string
     {
-        return \strval($this->body);
+        if ($this->body === null) {
+            return '';
+        }
+        if (is_string($this->body)) {
+            return $this->body;
+        }
+        if (is_scalar($this->body)) {
+            return \strval($this->body);
+        }
+        if (is_object($this->body) && method_exists($this->body, '__toString')) {
+            return (string) $this->body;
+        }
+        return '';
     }
 
     /**
@@ -90,7 +102,8 @@ class Response
     */
     public function json(): mixed
     {
-        $data = \json_decode($this->body, true);
+        $bodyString = is_string($this->body) ? $this->body : '';
+        $data = \json_decode($bodyString, true);
 
         // Check for JSON errors using json_last_error()
         if (\json_last_error() !== JSON_ERROR_NONE) {
@@ -106,9 +119,10 @@ class Response
      */
     public function blob(): string
     {
+        $bodyString = is_string($this->body) ? $this->body : '';
         $bin = [];
-        for ($i = 0, $j = strlen($this->body); $i < $j; $i++) {
-            $bin[] = decbin(ord($this->body[$i]));
+        for ($i = 0, $j = strlen($bodyString); $i < $j; $i++) {
+            $bin[] = decbin(ord($bodyString[$i]));
         }
         return implode(" ", $bin);
     }

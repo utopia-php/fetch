@@ -22,7 +22,7 @@ final class CurlTest extends TestCase
     public function testGetRequest(): void
     {
         $response = $this->adapter->send(
-            url: 'localhost:8000',
+            url: '127.0.0.1:8000',
             method: 'GET',
             body: null,
             headers: [],
@@ -38,6 +38,7 @@ final class CurlTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
         $data = $response->json();
+        $this->assertIsArray($data);
         $this->assertSame('GET', $data['method']);
     }
 
@@ -48,7 +49,7 @@ final class CurlTest extends TestCase
     {
         $body = json_encode(['name' => 'John Doe', 'age' => 30]);
         $response = $this->adapter->send(
-            url: 'localhost:8000',
+            url: '127.0.0.1:8000',
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'application/json'],
@@ -64,6 +65,7 @@ final class CurlTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
         $data = $response->json();
+        $this->assertIsArray($data);
         $this->assertSame('POST', $data['method']);
         $this->assertSame($body, $data['body']);
     }
@@ -74,7 +76,7 @@ final class CurlTest extends TestCase
     public function testCustomTimeout(): void
     {
         $response = $this->adapter->send(
-            url: 'localhost:8000',
+            url: '127.0.0.1:8000',
             method: 'GET',
             body: null,
             headers: [],
@@ -97,7 +99,7 @@ final class CurlTest extends TestCase
     public function testRedirectHandling(): void
     {
         $response = $this->adapter->send(
-            url: 'localhost:8000/redirect',
+            url: '127.0.0.1:8000/redirect',
             method: 'GET',
             body: null,
             headers: [],
@@ -113,6 +115,7 @@ final class CurlTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
         $data = $response->json();
+        $this->assertIsArray($data);
         $this->assertSame('redirectedPage', $data['page']);
     }
 
@@ -122,7 +125,7 @@ final class CurlTest extends TestCase
     public function testRedirectDisabled(): void
     {
         $response = $this->adapter->send(
-            url: 'localhost:8000/redirect',
+            url: '127.0.0.1:8000/redirect',
             method: 'GET',
             body: null,
             headers: [],
@@ -146,7 +149,7 @@ final class CurlTest extends TestCase
     {
         $chunks = [];
         $response = $this->adapter->send(
-            url: 'localhost:8000/chunked',
+            url: '127.0.0.1:8000/chunked',
             method: 'GET',
             body: null,
             headers: [],
@@ -181,7 +184,7 @@ final class CurlTest extends TestCase
     {
         $body = ['name' => 'John Doe', 'age' => '30'];
         $response = $this->adapter->send(
-            url: 'localhost:8000',
+            url: '127.0.0.1:8000',
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'application/x-www-form-urlencoded'],
@@ -204,7 +207,7 @@ final class CurlTest extends TestCase
     public function testResponseHeaders(): void
     {
         $response = $this->adapter->send(
-            url: 'localhost:8000',
+            url: '127.0.0.1:8000',
             method: 'GET',
             body: null,
             headers: [],
@@ -254,7 +257,7 @@ final class CurlTest extends TestCase
         ];
 
         $response = $this->adapter->send(
-            url: 'localhost:8000',
+            url: '127.0.0.1:8000',
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'multipart/form-data'],
@@ -270,7 +273,10 @@ final class CurlTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
         $data = $response->json();
+        $this->assertIsArray($data);
+        $this->assertIsString($data['files']);
         $files = json_decode($data['files'], true);
+        $this->assertIsArray($files);
         $this->assertSame('logo.png', $files['file']['name']);
     }
 }

@@ -44,6 +44,7 @@ final class SwooleTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
         $data = $response->json();
+        $this->assertIsArray($data);
         $this->assertSame('GET', $data['method']);
     }
 
@@ -74,6 +75,7 @@ final class SwooleTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
         $data = $response->json();
+        $this->assertIsArray($data);
         $this->assertSame('POST', $data['method']);
         $this->assertSame($body, $data['body']);
     }
@@ -131,6 +133,7 @@ final class SwooleTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
         $data = $response->json();
+        $this->assertIsArray($data);
         $this->assertSame('redirectedPage', $data['page']);
     }
 
