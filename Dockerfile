@@ -1,11 +1,10 @@
-FROM composer:2.0 as step0
+FROM composer:2.0 AS step0
 
 WORKDIR /src/
 
 COPY ./composer.json /src/
-COPY ./composer.lock /src/
 
-RUN composer install --ignore-platform-reqs --optimize-autoloader \
+RUN composer update --ignore-platform-reqs --optimize-autoloader \
     --no-plugins --no-scripts --prefer-dist
 
 FROM appwrite/base:0.10.4 AS final
