@@ -183,6 +183,8 @@ class Swoole implements Adapter
             return;
         }
 
+        $normalizedHeaders = array_change_key_case($headers, CASE_LOWER);
+
         if (is_array($body)) {
             $hasFiles = false;
             $formData = [];
@@ -210,7 +212,7 @@ class Swoole implements Adapter
                 foreach ($formData as $key => $value) {
                     $client->addData($value, $key);
                 }
-            } elseif (isset($headers['content-type']) && $headers['content-type'] === 'application/x-www-form-urlencoded') {
+            } elseif (isset($normalizedHeaders['content-type']) && $normalizedHeaders['content-type'] === 'application/x-www-form-urlencoded') {
                 $client->setData(http_build_query($body));
             } else {
                 $client->setData($body);
