@@ -38,11 +38,16 @@ class Curl implements Adapter
      * Get or create the cURL handle
      *
      * @return CurlHandle
+     * @throws Exception If cURL initialization fails
      */
     private function getHandle(): CurlHandle
     {
         if ($this->handle === null) {
-            $this->handle = curl_init();
+            $handle = curl_init();
+            if ($handle === false) {
+                throw new Exception('Failed to initialize cURL handle');
+            }
+            $this->handle = $handle;
         } else {
             curl_reset($this->handle);
         }
