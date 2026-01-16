@@ -6,7 +6,7 @@ namespace Utopia\Fetch\Adapter;
 
 use CURLFile;
 use Swoole\Coroutine;
-use Swoole\Coroutine\Http\Client as SwooleClient;
+use Swoole\Coroutine\Http\Client as CoClient;
 use Throwable;
 use Utopia\Fetch\Adapter;
 use Utopia\Fetch\Chunk;
@@ -15,13 +15,13 @@ use Utopia\Fetch\Response;
 
 /**
  * Swoole Adapter
- * HTTP adapter using Swoole's coroutine HTTP client
+ * HTTP adapter using Swoole's HTTP client
  * @package Utopia\Fetch\Adapter
  */
 class Swoole implements Adapter
 {
     /**
-     * @var array<string, SwooleClient>
+     * @var array<string, CoClient>
      */
     private array $clients = [];
 
@@ -38,7 +38,7 @@ class Swoole implements Adapter
     /**
      * Create a new Swoole adapter
      *
-     * @param bool $coroutines If true, automatically wraps requests in a coroutine scheduler when not already in a coroutine context. Set to false when running inside a Swoole server.
+     * @param bool $coroutines If true, uses Swoole\Coroutine\Http\Client. If false, uses Swoole\Http\Client (sync/blocking).
      * @param bool $keepAlive Enable HTTP keep-alive for connection reuse
      * @param int $socketBufferSize Socket buffer size in bytes
      * @param bool $httpCompression Enable HTTP compression (gzip, br)
@@ -99,13 +99,14 @@ class Swoole implements Adapter
     }
 
     /**
-     * Check if Swoole is available
+     * Check if Swoole coroutine client is available
      *
      * @return bool
      */
     public static function isAvailable(): bool
     {
-        return class_exists(SwooleClient::class);
+        /** @phpstan-ignore-next-line */
+        return class_exists(CoClient::class) || class_exists(\Swoole\Http\Client::class);
     }
 
     /**
@@ -114,14 +115,23 @@ class Swoole implements Adapter
      * @param string $host
      * @param int $port
      * @param bool $ssl
-     * @return SwooleClient
+     * @return CoClient
      */
-    private function getClient(string $host, int $port, bool $ssl): SwooleClient
+    private function getClient(string $host, int $port, bool $ssl): CoClient
     {
         $key = "{$host}:{$port}:" . ($ssl ? '1' : '0');
 
         if (!isset($this->clients[$key])) {
-            $this->clients[$key] = new SwooleClient($host, $port, $ssl);
+            if ($this->coroutines) {
+                $this->clients[$key] = new CoClient($host, $port, $ssl);
+            } else {
+                /**
+                 * @phpstan-ignore-next-line
+                 * @var CoClient $client
+                 */
+                $client = new \Swoole\Http\Client($host, $port, $ssl);
+                $this->clients[$key] = $client;
+            }
         }
 
         return $this->clients[$key];
@@ -148,12 +158,12 @@ class Swoole implements Adapter
     /**
      * Configure body data on the client
      *
-     * @param SwooleClient $client
+     * @param CoClient $client Swoole HTTP client
      * @param mixed $body
      * @param array<string, string> $headers
      * @return void
      */
-    private function configureBody(SwooleClient $client, mixed $body, array $headers): void
+    private function configureBody(CoClient $client, mixed $body, array $headers): void
     {
         if ($body === null) {
             return;
@@ -374,12 +384,12 @@ class Swoole implements Adapter
             throw new Exception('Swoole extension is not installed');
         }
 
-        // If coroutines are disabled or we're already in a coroutine, execute directly
+        // If using sync client or already in a coroutine, execute directly
         if (!$this->coroutines || Coroutine::getCid() > 0) {
             return $this->executeRequest($url, $method, $body, $headers, $options, $chunkCallback);
         }
 
-        // Wrap in coroutine scheduler
+        // Wrap in coroutine scheduler for coroutine client
         $response = null;
         $exception = null;
 
