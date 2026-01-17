@@ -5,6 +5,7 @@ namespace Utopia\Fetch\Adapter;
 use PHPUnit\Framework\TestCase;
 use Utopia\Fetch\Chunk;
 use Utopia\Fetch\Exception;
+use Utopia\Fetch\Options\Request as RequestOptions;
 use Utopia\Fetch\Response;
 
 final class CurlTest extends TestCase
@@ -26,13 +27,7 @@ final class CurlTest extends TestCase
             method: 'GET',
             body: null,
             headers: [],
-            options: [
-                'timeout' => 15000,
-                'connectTimeout' => 60000,
-                'maxRedirects' => 5,
-                'allowRedirects' => true,
-                'userAgent' => ''
-            ]
+            options: new RequestOptions()
         );
 
         $this->assertInstanceOf(Response::class, $response);
@@ -53,13 +48,7 @@ final class CurlTest extends TestCase
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'application/json'],
-            options: [
-                'timeout' => 15000,
-                'connectTimeout' => 60000,
-                'maxRedirects' => 5,
-                'allowRedirects' => true,
-                'userAgent' => ''
-            ]
+            options: new RequestOptions()
         );
 
         $this->assertInstanceOf(Response::class, $response);
@@ -80,13 +69,11 @@ final class CurlTest extends TestCase
             method: 'GET',
             body: null,
             headers: [],
-            options: [
-                'timeout' => 5000,
-                'connectTimeout' => 10000,
-                'maxRedirects' => 5,
-                'allowRedirects' => true,
-                'userAgent' => 'TestAgent/1.0'
-            ]
+            options: new RequestOptions(
+                timeout: 5000,
+                connectTimeout: 10000,
+                userAgent: 'TestAgent/1.0'
+            )
         );
 
         $this->assertInstanceOf(Response::class, $response);
@@ -103,13 +90,7 @@ final class CurlTest extends TestCase
             method: 'GET',
             body: null,
             headers: [],
-            options: [
-                'timeout' => 15000,
-                'connectTimeout' => 60000,
-                'maxRedirects' => 5,
-                'allowRedirects' => true,
-                'userAgent' => ''
-            ]
+            options: new RequestOptions()
         );
 
         $this->assertInstanceOf(Response::class, $response);
@@ -129,13 +110,10 @@ final class CurlTest extends TestCase
             method: 'GET',
             body: null,
             headers: [],
-            options: [
-                'timeout' => 15000,
-                'connectTimeout' => 60000,
-                'maxRedirects' => 0,
-                'allowRedirects' => false,
-                'userAgent' => ''
-            ]
+            options: new RequestOptions(
+                maxRedirects: 0,
+                allowRedirects: false
+            )
         );
 
         $this->assertInstanceOf(Response::class, $response);
@@ -153,13 +131,7 @@ final class CurlTest extends TestCase
             method: 'GET',
             body: null,
             headers: [],
-            options: [
-                'timeout' => 15000,
-                'connectTimeout' => 60000,
-                'maxRedirects' => 5,
-                'allowRedirects' => true,
-                'userAgent' => ''
-            ],
+            options: new RequestOptions(),
             chunkCallback: function (Chunk $chunk) use (&$chunks) {
                 $chunks[] = $chunk;
             }
@@ -188,13 +160,7 @@ final class CurlTest extends TestCase
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'application/x-www-form-urlencoded'],
-            options: [
-                'timeout' => 15000,
-                'connectTimeout' => 60000,
-                'maxRedirects' => 5,
-                'allowRedirects' => true,
-                'userAgent' => ''
-            ]
+            options: new RequestOptions()
         );
 
         $this->assertInstanceOf(Response::class, $response);
@@ -211,13 +177,7 @@ final class CurlTest extends TestCase
             method: 'GET',
             body: null,
             headers: [],
-            options: [
-                'timeout' => 15000,
-                'connectTimeout' => 60000,
-                'maxRedirects' => 5,
-                'allowRedirects' => true,
-                'userAgent' => ''
-            ]
+            options: new RequestOptions()
         );
 
         $headers = $response->getHeaders();
@@ -236,13 +196,7 @@ final class CurlTest extends TestCase
             method: 'GET',
             body: null,
             headers: [],
-            options: [
-                'timeout' => 15000,
-                'connectTimeout' => 60000,
-                'maxRedirects' => 5,
-                'allowRedirects' => true,
-                'userAgent' => ''
-            ]
+            options: new RequestOptions()
         );
     }
 
@@ -261,13 +215,7 @@ final class CurlTest extends TestCase
             method: 'POST',
             body: $body,
             headers: ['content-type' => 'multipart/form-data'],
-            options: [
-                'timeout' => 15000,
-                'connectTimeout' => 60000,
-                'maxRedirects' => 5,
-                'allowRedirects' => true,
-                'userAgent' => ''
-            ]
+            options: new RequestOptions()
         );
 
         $this->assertInstanceOf(Response::class, $response);

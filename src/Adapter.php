@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Utopia\Fetch;
 
+use Utopia\Fetch\Options\Request as RequestOptions;
+
 /**
  * Adapter interface
  * Defines the contract for HTTP adapters
@@ -18,7 +20,7 @@ interface Adapter
      * @param string $method The HTTP method (GET, POST, etc.)
      * @param mixed $body The request body (string, array, or null)
      * @param array<string, string> $headers The request headers (formatted as key-value pairs)
-     * @param array<string, mixed> $options Additional options (timeout, connectTimeout, maxRedirects, allowRedirects, userAgent)
+     * @param RequestOptions $options Request options (timeout, connectTimeout, maxRedirects, allowRedirects, userAgent)
      * @param callable|null $chunkCallback Optional callback for streaming chunks
      * @return Response The HTTP response
      * @throws Exception If the request fails
@@ -28,7 +30,7 @@ interface Adapter
         string $method,
         mixed $body,
         array $headers,
-        array $options = [],
+        RequestOptions $options,
         ?callable $chunkCallback = null
     ): Response;
 }

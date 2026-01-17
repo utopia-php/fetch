@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Utopia\Fetch;
 
 use Utopia\Fetch\Adapter\Curl;
+use Utopia\Fetch\Options\Request as RequestOptions;
 
 /**
  * Client class
@@ -307,13 +308,13 @@ class Client
             $url = $url . $separator . http_build_query($query);
         }
 
-        $options = [
-            'timeout' => $timeoutMs ?? $this->timeout,
-            'connectTimeout' => $connectTimeoutMs ?? $this->connectTimeout,
-            'maxRedirects' => $this->maxRedirects,
-            'allowRedirects' => $this->allowRedirects,
-            'userAgent' => $this->userAgent
-        ];
+        $options = new RequestOptions(
+            timeout: $timeoutMs ?? $this->timeout,
+            connectTimeout: $connectTimeoutMs ?? $this->connectTimeout,
+            maxRedirects: $this->maxRedirects,
+            allowRedirects: $this->allowRedirects,
+            userAgent: $this->userAgent
+        );
 
         $sendRequest = function () use ($url, $method, $body, $options, $chunks): Response {
             return $this->adapter->send(

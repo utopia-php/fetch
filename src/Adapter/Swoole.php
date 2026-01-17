@@ -11,6 +11,8 @@ use Throwable;
 use Utopia\Fetch\Adapter;
 use Utopia\Fetch\Chunk;
 use Utopia\Fetch\Exception;
+use Utopia\Fetch\Options\Request as RequestOptions;
+use Utopia\Fetch\Options\Swoole as SwooleOptions;
 use Utopia\Fetch\Response;
 
 /**
@@ -38,67 +40,42 @@ class Swoole implements Adapter
     /**
      * Create a new Swoole adapter
      *
-     * @param bool $coroutines If true, uses Swoole\Coroutine\Http\Client. If false, uses Swoole\Http\Client (sync/blocking).
-     * @param bool $keepAlive Enable HTTP keep-alive for connection reuse
-     * @param int $socketBufferSize Socket buffer size in bytes
-     * @param bool $httpCompression Enable HTTP compression (gzip, br)
-     * @param bool $sslVerifyPeer Verify the peer's SSL certificate
-     * @param string|null $sslHostName Expected SSL hostname for verification
-     * @param string|null $sslCafile Path to CA certificate file
-     * @param bool $sslAllowSelfSigned Allow self-signed SSL certificates
-     * @param int $packageMaxLength Maximum package length in bytes
-     * @param bool $websocketMask Enable WebSocket masking (for WebSocket connections)
-     * @param string|null $bindAddress Local address to bind to
-     * @param int|null $bindPort Local port to bind to
-     * @param bool $websocketCompression Enable WebSocket compression
-     * @param int $lowaterMark Low water mark for write buffer
+     * @param SwooleOptions|null $options Swoole adapter options
      */
-    public function __construct(
-        bool $coroutines = true,
-        bool $keepAlive = true,
-        int $socketBufferSize = 1048576,
-        bool $httpCompression = true,
-        bool $sslVerifyPeer = true,
-        ?string $sslHostName = null,
-        ?string $sslCafile = null,
-        bool $sslAllowSelfSigned = false,
-        int $packageMaxLength = 2097152,
-        bool $websocketMask = true,
-        ?string $bindAddress = null,
-        ?int $bindPort = null,
-        bool $websocketCompression = false,
-        int $lowaterMark = 0,
-    ) {
-        if ($coroutines && !class_exists(CoClient::class)) {
+    public function __construct(?SwooleOptions $options = null)
+    {
+        $options ??= new SwooleOptions();
+
+        if ($options->getCoroutines() && !class_exists(CoClient::class)) {
             $this->coroutines = false;
         } else {
-            $this->coroutines = $coroutines;
+            $this->coroutines = $options->getCoroutines();
         }
 
-        $this->config['keep_alive'] = $keepAlive;
-        $this->config['socket_buffer_size'] = $socketBufferSize;
-        $this->config['http_compression'] = $httpCompression;
-        $this->config['ssl_verify_peer'] = $sslVerifyPeer;
-        $this->config['ssl_allow_self_signed'] = $sslAllowSelfSigned;
-        $this->config['package_max_length'] = $packageMaxLength;
-        $this->config['websocket_mask'] = $websocketMask;
-        $this->config['websocket_compression'] = $websocketCompression;
-        $this->config['lowwater_mark'] = $lowaterMark;
+        $this->config['keep_alive'] = $options->getKeepAlive();
+        $this->config['socket_buffer_size'] = $options->getSocketBufferSize();
+        $this->config['http_compression'] = $options->getHttpCompression();
+        $this->config['ssl_verify_peer'] = $options->getSslVerifyPeer();
+        $this->config['ssl_allow_self_signed'] = $options->getSslAllowSelfSigned();
+        $this->config['package_max_length'] = $options->getPackageMaxLength();
+        $this->config['websocket_mask'] = $options->getWebsocketMask();
+        $this->config['websocket_compression'] = $options->getWebsocketCompression();
+        $this->config['lowwater_mark'] = $options->getLowaterMark();
 
-        if ($sslHostName !== null) {
-            $this->config['ssl_host_name'] = $sslHostName;
+        if ($options->getSslHostName() !== null) {
+            $this->config['ssl_host_name'] = $options->getSslHostName();
         }
 
-        if ($sslCafile !== null) {
-            $this->config['ssl_cafile'] = $sslCafile;
+        if ($options->getSslCafile() !== null) {
+            $this->config['ssl_cafile'] = $options->getSslCafile();
         }
 
-        if ($bindAddress !== null) {
-            $this->config['bind_address'] = $bindAddress;
+        if ($options->getBindAddress() !== null) {
+            $this->config['bind_address'] = $options->getBindAddress();
         }
 
-        if ($bindPort !== null) {
-            $this->config['bind_port'] = $bindPort;
+        if ($options->getBindPort() !== null) {
+            $this->config['bind_port'] = $options->getBindPort();
         }
     }
 
@@ -244,7 +221,7 @@ class Swoole implements Adapter
      * @param string $method
      * @param mixed $body
      * @param array<string, string> $headers
-     * @param array<string, mixed> $options
+     * @param RequestOptions $options
      * @param callable|null $chunkCallback
      * @return Response
      * @throws Exception
@@ -254,7 +231,7 @@ class Swoole implements Adapter
         string $method,
         mixed $body,
         array $headers,
-        array $options,
+        RequestOptions $options,
         ?callable $chunkCallback
     ): Response {
         if (!preg_match('~^https?://~i', $url)) {
@@ -282,11 +259,11 @@ class Swoole implements Adapter
 
         $client = $this->getClient($host, $port, $ssl);
 
-        $timeout = ($options['timeout'] ?? 15000) / 1000;
-        $connectTimeout = ($options['connectTimeout'] ?? 60000) / 1000;
-        $maxRedirects = $options['maxRedirects'] ?? 5;
-        $allowRedirects = $options['allowRedirects'] ?? true;
-        $userAgent = $options['userAgent'] ?? '';
+        $timeout = $options->getTimeout() / 1000;
+        $connectTimeout = $options->getConnectTimeout() / 1000;
+        $maxRedirects = $options->getMaxRedirects();
+        $allowRedirects = $options->getAllowRedirects();
+        $userAgent = $options->getUserAgent();
 
         $client->set($this->buildClientSettings($timeout, $connectTimeout));
 
@@ -393,7 +370,7 @@ class Swoole implements Adapter
      * @param string $method The HTTP method (GET, POST, etc.)
      * @param mixed $body The request body (string, array, or null)
      * @param array<string, string> $headers The request headers (formatted as key-value pairs)
-     * @param array<string, mixed> $options Additional options (timeout, connectTimeout, maxRedirects, allowRedirects, userAgent)
+     * @param RequestOptions $options Request options (timeout, connectTimeout, maxRedirects, allowRedirects, userAgent)
      * @param callable|null $chunkCallback Optional callback for streaming chunks
      * @return Response The HTTP response
      * @throws Exception If the request fails or Swoole is not available
@@ -403,7 +380,7 @@ class Swoole implements Adapter
         string $method,
         mixed $body,
         array $headers,
-        array $options = [],
+        RequestOptions $options,
         ?callable $chunkCallback = null
     ): Response {
         if (!self::isAvailable()) {
