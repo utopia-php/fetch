@@ -33,11 +33,6 @@ class Swoole implements Adapter
     private array $config = [];
 
     /**
-     * @var bool
-     */
-    private bool $coroutines;
-
-    /**
      * Create a new Swoole adapter
      *
      * @param SwooleOptions|null $options Swoole adapter options
@@ -45,12 +40,6 @@ class Swoole implements Adapter
     public function __construct(?SwooleOptions $options = null)
     {
         $options ??= new SwooleOptions();
-
-        if ($options->getCoroutines() && !class_exists(CoClient::class)) {
-            $this->coroutines = false;
-        } else {
-            $this->coroutines = $options->getCoroutines();
-        }
 
         $this->config['keep_alive'] = $options->getKeepAlive();
         $this->config['socket_buffer_size'] = $options->getSocketBufferSize();
@@ -86,7 +75,7 @@ class Swoole implements Adapter
      */
     public static function isAvailable(): bool
     {
-        return class_exists(CoClient::class) || class_exists(\Swoole\Http\Client::class);
+        return class_exists(CoClient::class);
     }
 
     /**
@@ -102,13 +91,7 @@ class Swoole implements Adapter
         $key = "{$host}:{$port}:" . ($ssl ? '1' : '0');
 
         if (!isset($this->clients[$key])) {
-            if ($this->coroutines) {
-                $this->clients[$key] = new CoClient($host, $port, $ssl);
-            } else {
-                /** @var CoClient $client */
-                $client = new \Swoole\Http\Client($host, $port, $ssl); // @phpstan-ignore class.notFound
-                $this->clients[$key] = $client;
-            }
+            $this->clients[$key] = new CoClient($host, $port, $ssl);
         }
 
         return $this->clients[$key];
@@ -373,12 +356,12 @@ class Swoole implements Adapter
             throw new Exception('Swoole extension is not installed');
         }
 
-        // If using sync client or already in a coroutine, execute directly
-        if (!$this->coroutines || Coroutine::getCid() > 0) {
+        // If already in a coroutine, execute directly
+        if (Coroutine::getCid() > 0) {
             return $this->executeRequest($url, $method, $body, $headers, $options, $chunkCallback);
         }
 
-        // Wrap in coroutine scheduler for coroutine client
+        // Wrap in coroutine scheduler
         $response = null;
         $exception = null;
 

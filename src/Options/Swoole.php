@@ -14,7 +14,6 @@ class Swoole
     /**
      * Create Swoole adapter options
      *
-     * @param bool $coroutines If true, uses Swoole\Coroutine\Http\Client. If false, uses Swoole\Http\Client (sync/blocking).
      * @param bool $keepAlive Enable HTTP keep-alive for connection reuse
      * @param int $socketBufferSize Socket buffer size in bytes
      * @param bool $httpCompression Enable HTTP compression (gzip, br)
@@ -30,7 +29,6 @@ class Swoole
      * @param int $lowaterMark Low water mark for write buffer
      */
     public function __construct(
-        private bool $coroutines = true,
         private bool $keepAlive = true,
         private int $socketBufferSize = 1048576,
         private bool $httpCompression = true,
@@ -45,11 +43,6 @@ class Swoole
         private bool $websocketCompression = false,
         private int $lowaterMark = 0,
     ) {
-    }
-
-    public function getCoroutines(): bool
-    {
-        return $this->coroutines;
     }
 
     public function getKeepAlive(): bool
