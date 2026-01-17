@@ -351,8 +351,17 @@ class Swoole implements Adapter
                             $client = $this->getClient($host, $port, $ssl);
                             $client->set($this->buildClientSettings($timeout, $connectTimeout));
                             $client->setMethod($method);
-                            if (!empty($allHeaders)) {
-                                $client->setHeaders($allHeaders);
+
+                            // Filter sensitive headers on cross-origin redirects
+                            $sensitiveHeaders = ['authorization', 'cookie', 'proxy-authorization', 'host'];
+                            $redirectHeaders = array_filter(
+                                $allHeaders,
+                                fn ($key) => !in_array(strtolower($key), $sensitiveHeaders),
+                                ARRAY_FILTER_USE_KEY
+                            );
+
+                            if (!empty($redirectHeaders)) {
+                                $client->setHeaders($redirectHeaders);
                             }
                             $this->configureBody($client, $body, $headers);
                         }

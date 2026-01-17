@@ -624,4 +624,63 @@ final class ClientTest extends TestCase
         $this->assertIsArray($firstChunk);
         $this->assertSame('username', $firstChunk['field']);
     }
+
+    /**
+     * Test that query parameters are appended correctly when URL has trailing '?'
+     * @return void
+     */
+    public function testQueryWithTrailingQuestionMark(): void
+    {
+        $client = new Client();
+        $response = $client->fetch(
+            url: '127.0.0.1:8000?',
+            method: Client::METHOD_GET,
+            query: ['foo' => 'bar']
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        $data = $response->json();
+        $this->assertIsArray($data);
+        $this->assertSame(['foo' => 'bar'], $data['query']);
+    }
+
+    /**
+     * Test that query parameters are appended correctly when URL has trailing '&'
+     * @return void
+     */
+    public function testQueryWithTrailingAmpersand(): void
+    {
+        $client = new Client();
+        $response = $client->fetch(
+            url: '127.0.0.1:8000?existing=value&',
+            method: Client::METHOD_GET,
+            query: ['foo' => 'bar']
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        $data = $response->json();
+        $this->assertIsArray($data);
+        $this->assertSame('value', $data['query']['existing']);
+        $this->assertSame('bar', $data['query']['foo']);
+    }
+
+    /**
+     * Test that query parameters are appended correctly with existing query string
+     * @return void
+     */
+    public function testQueryWithExistingParams(): void
+    {
+        $client = new Client();
+        $response = $client->fetch(
+            url: '127.0.0.1:8000?existing=value',
+            method: Client::METHOD_GET,
+            query: ['foo' => 'bar']
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        $data = $response->json();
+        $this->assertIsArray($data);
+        $this->assertSame('value', $data['query']['existing']);
+        $this->assertSame('bar', $data['query']['foo']);
+    }
 }

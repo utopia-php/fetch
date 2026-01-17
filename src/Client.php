@@ -302,8 +302,9 @@ class Client
         }
 
         if ($query) {
+            $url = rtrim($url, '?&');
             $separator = str_contains($url, '?') ? '&' : '?';
-            $url = rtrim($url, '?&') . $separator . http_build_query($query);
+            $url = $url . $separator . http_build_query($query);
         }
 
         $options = [
