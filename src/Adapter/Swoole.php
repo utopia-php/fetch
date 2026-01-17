@@ -86,17 +86,7 @@ class Swoole implements Adapter
      */
     public static function isAvailable(): bool
     {
-        return class_exists(CoClient::class) || class_exists('Swoole\\Http\\Client');
-    }
-
-    /**
-     * Get the sync client class name
-     *
-     * @return string
-     */
-    private static function getSyncClientClass(): string
-    {
-        return 'Swoole' . '\\' . 'Http' . '\\' . 'Client';
+        return class_exists(CoClient::class) || class_exists(\Swoole\Http\Client::class);
     }
 
     /**
@@ -115,12 +105,8 @@ class Swoole implements Adapter
             if ($this->coroutines) {
                 $this->clients[$key] = new CoClient($host, $port, $ssl);
             } else {
-                $syncClientClass = self::getSyncClientClass();
-                if (!class_exists($syncClientClass)) {
-                    throw new Exception('Swoole sync HTTP client is not available');
-                }
                 /** @var CoClient $client */
-                $client = new $syncClientClass($host, $port, $ssl);
+                $client = new \Swoole\Http\Client($host, $port, $ssl); // @phpstan-ignore class.notFound
                 $this->clients[$key] = $client;
             }
         }
