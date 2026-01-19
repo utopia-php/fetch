@@ -29,8 +29,7 @@ jobs:
 
       - name: Start Server
         run: |
-          docker compose up -d
-          sleep 5
+          docker compose up -d --wait --wait-timeout 30
 
       - name: Run Tests
         run: docker compose exec -T php vendor/bin/phpunit --configuration phpunit.xml
