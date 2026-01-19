@@ -1,0 +1,25 @@
+FROM composer:2.0 AS step0
+
+WORKDIR /src/
+
+COPY ./composer.json /src/
+
+RUN composer update --ignore-platform-reqs --optimize-autoloader \
+    --no-plugins --no-scripts --prefer-dist
+
+FROM appwrite/utopia-base:php-8.4-0.2.1 AS final
+
+LABEL maintainer="team@utopia.io"
+
+WORKDIR /code
+
+COPY --from=step0 /src/vendor /code/vendor
+
+# Add Source Code
+COPY ./src /code/src
+COPY ./tests /code/tests
+COPY ./phpunit.xml /code/
+
+EXPOSE 8000
+
+CMD [ "php", "-S", "0.0.0.0:8000", "tests/router.php"]

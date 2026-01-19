@@ -49,11 +49,11 @@ final class ResponseTest extends TestCase
         $this->assertSame($body, $resp->getBody()); // Assert that the body is equal to the response's body
         $jsonBody = \json_decode($body, true); // Convert JSON string to object
         $this->assertSame($jsonBody, $resp->json()); // Assert that the JSON body is equal to the response's JSON body
-        $bin = ""; // Convert string to binary
+        $bin = []; // Convert string to binary
         for ($i = 0, $j = strlen($body); $i < $j; $i++) {
-            $bin .= decbin(ord($body)) . " ";
+            $bin[] = decbin(ord($body[$i]));
         }
-        $this->assertSame($bin, $resp->blob()); // Assert that the blob body is equal to the response's blob body
+        $this->assertSame(implode(" ", $bin), $resp->blob()); // Assert that the blob body is equal to the response's blob body
     }
     /**
      * Data provider for testClassConstructorAndGetters and testClassMethods
