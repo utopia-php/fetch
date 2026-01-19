@@ -22,6 +22,9 @@ use Utopia\Fetch\Response;
  */
 class Swoole implements Adapter
 {
+    private const REDIRECT_STATUS_CODES = [301, 302, 303, 307, 308];
+    private const SENSITIVE_HEADERS = ['authorization', 'cookie', 'proxy-authorization', 'host'];
+
     /**
      * @var array<string, CoClient>
      */
@@ -279,7 +282,7 @@ class Swoole implements Adapter
 
             $statusCode = $client->getStatusCode();
 
-            if ($allowRedirects && in_array($statusCode, [301, 302, 303, 307, 308]) && $redirectCount < $maxRedirects) {
+            if ($allowRedirects && in_array($statusCode, self::REDIRECT_STATUS_CODES) && $redirectCount < $maxRedirects) {
                 $location = $client->headers['location'] ?? $client->headers['Location'] ?? null;
                 if ($location !== null) {
                     $redirectCount++;
@@ -299,10 +302,9 @@ class Swoole implements Adapter
                             $client->setMethod($method);
 
                             // Filter sensitive headers on cross-origin redirects
-                            $sensitiveHeaders = ['authorization', 'cookie', 'proxy-authorization', 'host'];
                             $redirectHeaders = array_filter(
                                 $allHeaders,
-                                fn ($key) => !in_array(strtolower($key), $sensitiveHeaders),
+                                fn ($key) => !in_array(strtolower($key), self::SENSITIVE_HEADERS),
                                 ARRAY_FILTER_USE_KEY
                             );
 
