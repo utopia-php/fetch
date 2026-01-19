@@ -248,9 +248,7 @@ class Swoole implements Adapter
             $allHeaders['User-Agent'] = $userAgent;
         }
 
-        if (!empty($allHeaders)) {
-            $client->setHeaders($allHeaders);
-        }
+        $client->setHeaders($allHeaders);
 
         $this->configureBody($client, $body, $headers);
 
@@ -278,9 +276,8 @@ class Swoole implements Adapter
                     index: $chunkIndex++
                 );
                 $chunkCallback($chunk);
-            } else {
-                $responseBody = $currentResponseBody;
             }
+            $responseBody = $currentResponseBody;
 
             $statusCode = $client->getStatusCode();
 
@@ -310,9 +307,7 @@ class Swoole implements Adapter
                                 ARRAY_FILTER_USE_KEY
                             );
 
-                            if (!empty($redirectHeaders)) {
-                                $client->setHeaders($redirectHeaders);
-                            }
+                            $client->setHeaders($redirectHeaders);
                             $this->configureBody($client, $body, $headers);
                         }
                     } else {
