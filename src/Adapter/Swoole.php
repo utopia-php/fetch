@@ -258,7 +258,7 @@ class Swoole implements Adapter
 
             if (!$success) {
                 $errorCode = $client->errCode;
-                $errorMsg = socket_strerror($errorCode);
+                $errorMsg = $client->errMsg;
                 $this->closeClient($host, $port, $ssl);
                 throw new Exception("Request failed: {$errorMsg} (Code: {$errorCode})");
             }
