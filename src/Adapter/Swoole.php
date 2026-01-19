@@ -15,6 +15,8 @@ use Utopia\Fetch\Options\Request as RequestOptions;
 use Utopia\Fetch\Options\Swoole as SwooleOptions;
 use Utopia\Fetch\Response;
 
+use function Swoole\Coroutine\run;
+
 /**
  * Swoole Adapter
  * HTTP adapter using Swoole's HTTP client
@@ -261,7 +263,7 @@ class Swoole implements Adapter
 
             if (!$success) {
                 $errorCode = $client->errCode;
-                $errorMsg = socket_strerror($errorCode);
+                $errorMsg = $client->errMsg;
                 $this->closeClient($host, $port, $ssl);
                 throw new Exception("Request failed: {$errorMsg} (Code: {$errorCode})");
             }
@@ -367,8 +369,7 @@ class Swoole implements Adapter
         $response = null;
         $exception = null;
 
-        $coRun = 'Swoole\\Coroutine\\run';
-        $coRun(function () use ($url, $method, $body, $headers, $options, $chunkCallback, &$response, &$exception) {
+        run(function () use ($url, $method, $body, $headers, $options, $chunkCallback, &$response, &$exception) {
             try {
                 $response = $this->executeRequest($url, $method, $body, $headers, $options, $chunkCallback);
             } catch (Throwable $e) {

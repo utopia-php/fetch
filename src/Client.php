@@ -297,7 +297,7 @@ class Client
             $body = match ($this->headers['content-type']) {
                 self::CONTENT_TYPE_APPLICATION_JSON => $this->jsonEncode($body),
                 self::CONTENT_TYPE_APPLICATION_FORM_URLENCODED, self::CONTENT_TYPE_MULTIPART_FORM_DATA => self::flatten($body),
-                self::CONTENT_TYPE_GRAPHQL => isset($body['query']) && is_string($body['query']) ? $body['query'] : throw new Exception('GraphQL body must contain a "query" field with a string value'),
+                self::CONTENT_TYPE_GRAPHQL => isset($body['query']) && is_string($body['query']) ? $body['query'] : $this->jsonEncode($body),
                 default => $body,
             };
         }
