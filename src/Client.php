@@ -302,7 +302,7 @@ class Client
         ?int $timeoutMs = null,
         ?int $connectTimeoutMs = null,
     ): Response {
-        if (!empty($this->baseUrl) && !preg_match('~^https?://~i', $url)) {
+        if (!empty($this->baseUrl) && !str_starts_with($url, 'http://') && !str_starts_with($url, 'https://')) {
             $url = rtrim($this->baseUrl, '/') . '/' . ltrim($url, '/');
         }
 

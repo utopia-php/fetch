@@ -208,7 +208,7 @@ class Swoole implements Adapter
         RequestOptions $options,
         ?callable $chunkCallback
     ): Response {
-        if (!preg_match('~^https?://~i', $url)) {
+        if (!str_starts_with($url, 'http://') && !str_starts_with($url, 'https://')) {
             $url = 'http://' . $url;
         }
 
