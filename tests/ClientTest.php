@@ -349,6 +349,7 @@ final class ClientTest extends TestCase
         );
 
         if ($resp->getStatusCode() === 200) {
+            /** @var array<string, mixed> $respData */
             $respData = $resp->json();
             $this->assertEquals($respData['method'], Client::METHOD_GET);
             $this->assertEquals($respData['url'], 'localhost:8000');
@@ -372,6 +373,7 @@ final class ClientTest extends TestCase
         );
 
         if ($resp->getStatusCode() === 200) {
+            /** @var array<string, mixed> $respData */
             $respData = $resp->json();
             $this->assertEquals($respData['page'], "redirectedPage");
         } else {
@@ -394,6 +396,7 @@ final class ClientTest extends TestCase
         );
 
         if ($resp->getStatusCode() === 200) {
+            /** @var array<string, mixed> $respData */
             $respData = $resp->json();
             $this->assertEquals($respData['method'], Client::METHOD_GET);
             $this->assertEquals($respData['url'], 'localhost:8000');
@@ -421,6 +424,7 @@ final class ClientTest extends TestCase
         );
 
         if ($resp->getStatusCode() === 200) {
+            /** @var array<string, mixed> $respData */
             $respData = $resp->json();
             $this->assertEquals($respData['method'], Client::METHOD_GET);
             $this->assertEquals(
@@ -448,6 +452,7 @@ final class ClientTest extends TestCase
         );
 
         if ($resp->getStatusCode() === 200) {
+            /** @var array<string, mixed> $respData */
             $respData = $resp->json();
             $this->assertEquals($respData['page'], "redirectedPage");
         } else {
