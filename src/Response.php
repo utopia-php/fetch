@@ -46,7 +46,7 @@ class Response
         $this->headers = $headers;
         $this->statusCode = $statusCode;
     }
-    # Getters
+
     /**
      * This method is used to get the response body as string
      * @return mixed
@@ -55,6 +55,7 @@ class Response
     {
         return $this->body;
     }
+
     /**
      * This method is used to get the response headers
      * @return array<string, string>
@@ -63,6 +64,7 @@ class Response
     {
         return $this->headers;
     }
+
     /**
      * This method is used to get the response status code
      * @return int
@@ -71,39 +73,57 @@ class Response
     {
         return $this->statusCode;
     }
-    // Methods
 
     /**
-      * This method is used to convert the response body to text
-      * @return string
-    */
+     * This method is used to convert the response body to text
+     * @return string
+     */
     public function text(): string
     {
-        return \strval($this->body);
+        if ($this->body === null) {
+            return '';
+        }
+        if (is_string($this->body)) {
+            return $this->body;
+        }
+        if (is_scalar($this->body)) {
+            return \strval($this->body);
+        }
+        if (is_object($this->body) && method_exists($this->body, '__toString')) {
+            return (string) $this->body;
+        }
+        return '';
     }
+
     /**
-      * This method is used to convert the response body to JSON
-      * @return mixed
+    * This method is used to convert the response body to JSON
+    * @return mixed
+    * @throws Exception If JSON decoding fails
     */
     public function json(): mixed
     {
-        $data = \json_decode($this->body, true);
-        if ($data === null) { // Throw an exception if the data is null
-            throw new \Exception('Error decoding JSON');
+        $bodyString = is_string($this->body) ? $this->body : '';
+        $data = \json_decode($bodyString, true);
+
+        // Check for JSON errors using json_last_error()
+        if (\json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('Error decoding JSON: ' . \json_last_error_msg());
         }
+
         return $data;
     }
 
-    /*
-    * This method is used to convert the response body to blob
-    * @return string
-    */
+    /**
+     * This method is used to convert the response body to blob
+     * @return string
+     */
     public function blob(): string
     {
-        $bin = "";
-        for ($i = 0, $j = strlen($this->body); $i < $j; $i++) {
-            $bin .= decbin(ord($this->body)) . " ";
+        $bodyString = is_string($this->body) ? $this->body : '';
+        $bin = [];
+        for ($i = 0, $j = strlen($bodyString); $i < $j; $i++) {
+            $bin[] = decbin(ord($bodyString[$i]));
         }
-        return $bin;
+        return implode(" ", $bin);
     }
 }
