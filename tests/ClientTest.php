@@ -130,6 +130,36 @@ final class ClientTest extends TestCase
             echo "Please configure your PHP inbuilt SERVER";
         }
     }
+
+    public function testFormUrlencodedArrayBody(): void
+    {
+        $client = new Client();
+        $client->addHeader('content-type', Client::CONTENT_TYPE_APPLICATION_FORM_URLENCODED);
+
+        $resp = $client->fetch(
+            url: '127.0.0.1:8000',
+            method: Client::METHOD_POST,
+            body: [
+                'grant_type' => 'client_credentials',
+                'client_id' => 'client id',
+                'client_secret' => 'client+secret',
+                'scope' => [
+                    'mailbox',
+                    'conversation',
+                ],
+            ],
+        );
+
+        $this->assertSame(200, $resp->getStatusCode());
+        $respData = $resp->json();
+
+        $this->assertIsArray($respData);
+        $this->assertSame(
+            'grant_type=client_credentials&client_id=client+id&client_secret=client%2Bsecret&scope%5B0%5D=mailbox&scope%5B1%5D=conversation',
+            $respData['body']
+        );
+    }
+
     /**
      * Test for sending a file in the request body
      * @dataProvider sendFileDataSet
