@@ -187,7 +187,6 @@ class Curl implements Adapter
     public function __destruct()
     {
         if ($this->handle !== null) {
-            curl_close($this->handle);
             $this->handle = null;
         }
     }
