@@ -11,6 +11,7 @@ use Utopia\Fetch\Exception;
 use Utopia\Fetch\Options\Curl as CurlOptions;
 use Utopia\Fetch\Options\Request as RequestOptions;
 use Utopia\Fetch\Response;
+use Utopia\Fetch\TimeoutException;
 
 /**
  * Curl Adapter
@@ -168,7 +169,13 @@ class Curl implements Adapter
 
         $success = curl_exec($ch);
         if ($success === false) {
+            $errorCode = curl_errno($ch);
             $errorMsg = curl_error($ch);
+
+            if ($errorCode === CURLE_OPERATION_TIMEOUTED) {
+                throw new TimeoutException($errorMsg);
+            }
+
             throw new Exception($errorMsg);
         }
 

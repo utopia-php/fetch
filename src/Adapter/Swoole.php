@@ -14,6 +14,7 @@ use Utopia\Fetch\Exception;
 use Utopia\Fetch\Options\Request as RequestOptions;
 use Utopia\Fetch\Options\Swoole as SwooleOptions;
 use Utopia\Fetch\Response;
+use Utopia\Fetch\TimeoutException;
 
 use function Swoole\Coroutine\run;
 
@@ -263,6 +264,11 @@ class Swoole implements Adapter
                 $errorCode = $client->errCode;
                 $errorMsg = $client->errMsg;
                 $this->closeClient($host, $port, $ssl);
+
+                if ($errorCode === SOCKET_ETIMEDOUT) {
+                    throw new TimeoutException("Request timed out: {$errorMsg} (Code: {$errorCode})");
+                }
+
                 throw new Exception("Request failed: {$errorMsg} (Code: {$errorCode})");
             }
 
@@ -373,6 +379,9 @@ class Swoole implements Adapter
         });
 
         if ($exception !== null) {
+            if ($exception instanceof TimeoutException) {
+                throw $exception;
+            }
             throw new Exception($exception->getMessage());
         }
 

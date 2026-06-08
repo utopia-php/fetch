@@ -640,6 +640,36 @@ final class ClientTest extends TestCase
     }
 
     /**
+     * Test that timeout throws TimeoutException
+     * @return void
+     */
+    public function testTimeoutThrowsTimeoutException(): void
+    {
+        $client = new Client();
+        $client->setTimeout(1000); // 1 second
+
+        $this->expectException(TimeoutException::class);
+        $client->fetch('127.0.0.1:8000/slow?delay=3');
+    }
+
+    /**
+     * Test that retries cover timeout exceptions
+     * @return void
+     */
+    public function testRetryOnTimeout(): void
+    {
+        $client = new Client();
+        $client->setTimeout(1000); // 1 second timeout
+        $client->setMaxRetries(3);
+        $client->setRetryDelay(100);
+
+        // Server delays 3s, timeout is 1s, so all retries will timeout
+        // With 3 max retries, it should attempt 3 times then throw TimeoutException
+        $this->expectException(TimeoutException::class);
+        $client->fetch('127.0.0.1:8000/slow?delay=3');
+    }
+
+    /**
      * Test custom retry status codes
      * @return void
      */

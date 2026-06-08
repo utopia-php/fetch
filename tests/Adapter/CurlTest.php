@@ -7,6 +7,7 @@ use Utopia\Fetch\Chunk;
 use Utopia\Fetch\Exception;
 use Utopia\Fetch\Options\Request as RequestOptions;
 use Utopia\Fetch\Response;
+use Utopia\Fetch\TimeoutException;
 
 final class CurlTest extends TestCase
 {
@@ -183,6 +184,25 @@ final class CurlTest extends TestCase
         $headers = $response->getHeaders();
         $this->assertIsArray($headers);
         $this->assertArrayHasKey('content-type', $headers);
+    }
+
+    /**
+     * Test timeout throws TimeoutException
+     */
+    public function testTimeoutThrowsTimeoutException(): void
+    {
+        $this->expectException(TimeoutException::class);
+
+        $this->adapter->send(
+            url: '127.0.0.1:8000/slow?delay=3',
+            method: 'GET',
+            body: null,
+            headers: [],
+            options: new RequestOptions(
+                timeout: 1000, // 1 second timeout, server delays 3 seconds
+                connectTimeout: 1000
+            )
+        );
     }
 
     /**

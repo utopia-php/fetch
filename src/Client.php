@@ -268,12 +268,22 @@ class Client
     private function withRetries(callable $callback): mixed
     {
         $attempts = 1;
+        $lastException = null;
 
         while (true) {
-            $res = $callback();
+            try {
+                $lastException = null;
+                $res = $callback();
 
-            if (!in_array($res->getStatusCode(), $this->retryStatusCodes) || $attempts >= $this->maxRetries) {
-                return $res;
+                if (!in_array($res->getStatusCode(), $this->retryStatusCodes) || $attempts >= $this->maxRetries) {
+                    return $res;
+                }
+            } catch (TimeoutException $e) {
+                $lastException = $e;
+
+                if ($attempts >= $this->maxRetries) {
+                    throw $e;
+                }
             }
 
             usleep($this->retryDelay * 1000); // Convert milliseconds to microseconds

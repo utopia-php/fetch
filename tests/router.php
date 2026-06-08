@@ -85,6 +85,12 @@ if ($curPageName == 'redirect') {
         'success' => true,
         'attempts' => $state['attempts']
     ]);
+} elseif (explode('?', $curPageName)[0] == 'slow') {
+    $delay = isset($_GET['delay']) ? (int) $_GET['delay'] : 3;
+    sleep($delay);
+    header('Content-Type: application/json');
+    echo json_encode(['delayed' => true, 'seconds' => $delay]);
+    exit;
 } elseif ($curPageName == 'chunked') {
     // Set headers for chunked response
     header('Content-Type: text/plain');
