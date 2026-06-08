@@ -150,6 +150,7 @@ class Curl implements Adapter
             },
             CURLOPT_CONNECTTIMEOUT_MS => $options->getConnectTimeout(),
             CURLOPT_TIMEOUT_MS => $options->getTimeout(),
+            CURLOPT_NOSIGNAL => 1,
             CURLOPT_MAXREDIRS => $options->getMaxRedirects(),
             CURLOPT_FOLLOWLOCATION => $options->getAllowRedirects(),
             CURLOPT_USERAGENT => $options->getUserAgent()

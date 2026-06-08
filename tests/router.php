@@ -153,6 +153,12 @@ if ($curPageName == 'redirect') {
     // Send the final empty chunk to indicate the end of the response
     echo "0\r\n\r\n";
     exit;
+} elseif (explode('?', $curPageName)[0] == 'slow') {
+    $delay = isset($_GET['delay']) ? (int)$_GET['delay'] : 3;
+    sleep($delay);
+    header('Content-Type: application/json');
+    echo json_encode(['delayed' => true, 'seconds' => $delay]);
+    exit;
 } elseif ($curPageName == 'error') {
     http_response_code(404);
     header('Content-Type: application/json');

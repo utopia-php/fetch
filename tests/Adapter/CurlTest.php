@@ -186,6 +186,54 @@ final class CurlTest extends TestCase
     }
 
     /**
+     * Test that timeout is enforced and request does not hang
+     */
+    public function testTimeoutIsEnforced(): void
+    {
+        $start = microtime(true);
+
+        $this->expectException(Exception::class);
+
+        // Request a slow endpoint (3s delay) with a 1s timeout
+        $this->adapter->send(
+            url: '127.0.0.1:8000/slow?delay=3',
+            method: 'GET',
+            body: null,
+            headers: [],
+            options: new RequestOptions(
+                timeout: 1000,
+                connectTimeout: 1000,
+            )
+        );
+    }
+
+    /**
+     * Test that timeout aborts within a reasonable margin (not hanging for full server delay)
+     */
+    public function testTimeoutDoesNotHangBeyondLimit(): void
+    {
+        $start = microtime(true);
+
+        try {
+            $this->adapter->send(
+                url: '127.0.0.1:8000/slow?delay=5',
+                method: 'GET',
+                body: null,
+                headers: [],
+                options: new RequestOptions(
+                    timeout: 1000,
+                    connectTimeout: 1000,
+                )
+            );
+            $this->fail('Expected exception was not thrown');
+        } catch (Exception $e) {
+            $elapsed = microtime(true) - $start;
+            // Should abort well before the 5s server delay - allow 3s margin for CI
+            $this->assertLessThan(3.0, $elapsed, 'Request took too long; timeout was not properly enforced');
+        }
+    }
+
+    /**
      * Test invalid URL throws exception
      */
     public function testInvalidUrlThrowsException(): void
