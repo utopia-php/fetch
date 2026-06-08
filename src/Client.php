@@ -9,48 +9,67 @@ use Utopia\Fetch\Options\Request as RequestOptions;
 
 /**
  * Client class
- * @package Utopia\Fetch
  */
 class Client
 {
     public const METHOD_GET = 'GET';
+
     public const METHOD_POST = 'POST';
+
     public const METHOD_PUT = 'PUT';
+
     public const METHOD_PATCH = 'PATCH';
+
     public const METHOD_DELETE = 'DELETE';
+
     public const METHOD_HEAD = 'HEAD';
+
     public const METHOD_OPTIONS = 'OPTIONS';
+
     public const METHOD_CONNECT = 'CONNECT';
+
     public const METHOD_TRACE = 'TRACE';
 
     public const CONTENT_TYPE_APPLICATION_JSON = 'application/json';
+
     public const CONTENT_TYPE_APPLICATION_FORM_URLENCODED = 'application/x-www-form-urlencoded';
+
     public const CONTENT_TYPE_MULTIPART_FORM_DATA = 'multipart/form-data';
+
     public const CONTENT_TYPE_GRAPHQL = 'application/graphql';
 
     /** @var array<string, string> headers */
     private array $headers = [];
+
     private int $timeout = 15000; // milliseconds (15 seconds)
+
     private int $connectTimeout = 5000; // milliseconds (5 seconds)
+
     private int $maxRedirects = 5;
+
     private bool $allowRedirects = true;
+
     private string $userAgent = '';
+
     private int $maxRetries = 0;
+
     private int $retryDelay = 1000; // milliseconds
 
-    /** @var array<int> $retryStatusCodes */
+    /** @var array<int> */
     private array $retryStatusCodes = [500, 503];
+
     private ?int $jsonEncodeFlags = null;
+
     private Adapter $adapter;
 
     /**
      * Client constructor
      *
-     * @param Adapter|null $adapter HTTP adapter to use (defaults to Curl)
+     * @param  Adapter|null  $adapter  HTTP adapter to use (defaults to Curl)
      */
     public function __construct(?Adapter $adapter = null)
     {
-        $this->adapter = $adapter ?? new Curl();
+        $this->adapter = $adapter ?? new Curl;
     }
 
     protected string $baseUrl = '';
@@ -58,6 +77,7 @@ class Client
     public function setBaseUrl(string $baseUrl): self
     {
         $this->baseUrl = $baseUrl;
+
         return $this;
     }
 
@@ -66,97 +86,84 @@ class Client
         return $this->baseUrl;
     }
 
-    /**
-     * @param string $key
-     * @param string $value
-     * @return self
-     */
     public function addHeader(string $key, string $value): self
     {
         $this->headers[strtolower($key)] = $value;
+
         return $this;
     }
 
     /**
      * Remove a specific header.
-     *
-     * @param string $key
-     * @return self
      */
     public function removeHeader(string $key): self
     {
         unset($this->headers[strtolower($key)]);
+
         return $this;
     }
 
     /**
      * Clear all headers.
-     *
-     * @return self
      */
     public function clearHeaders(): self
     {
         $this->headers = [];
+
         return $this;
     }
 
     /**
      * Set the request timeout.
      *
-     * @param int $timeout Timeout in milliseconds
-     * @return self
+     * @param  int  $timeout  Timeout in milliseconds
      */
     public function setTimeout(int $timeout): self
     {
         $this->timeout = $timeout;
+
         return $this;
     }
 
     /**
      * Set whether to allow redirects.
-     *
-     * @param bool $allow
-     * @return self
      */
     public function setAllowRedirects(bool $allow): self
     {
         $this->allowRedirects = $allow;
+
         return $this;
     }
 
     /**
      * Set the maximum number of redirects.
-     *
-     * @param int $maxRedirects
-     * @return self
      */
     public function setMaxRedirects(int $maxRedirects): self
     {
         $this->maxRedirects = $maxRedirects;
+
         return $this;
     }
 
     /**
      * Set the connection timeout.
      *
-     * @param int $connectTimeout Timeout in milliseconds
-     * @return self
+     * @param  int  $connectTimeout  Timeout in milliseconds
      */
     public function setConnectTimeout(int $connectTimeout): self
     {
         $this->connectTimeout = $connectTimeout;
+
         return $this;
     }
 
     /**
      * Set the user agent.
-     *
-     * @param string $userAgent
-     * @return self
      */
     public function setUserAgent(string $userAgent): self
     {
         $this->userAgent = $userAgent;
+
         return $this;
     }
 
@@ -165,81 +172,78 @@ class Client
      *
      * The client will automatically retry the request if the response status code is 500 or 503, indicating a temporary error.
      * If the request fails after the maximum number of retries, the normal response will be returned.
-     *
-     * @param int $maxRetries
-     * @return self
      */
     public function setMaxRetries(int $maxRetries): self
     {
         $this->maxRetries = $maxRetries;
+
         return $this;
     }
+
     /**
      * set json_encode flags.
      *
-     * @param array<int> $flags
-     * @return self
+     * @param  array<int>  $flags
      */
     public function setJsonEncodeFlags(array $flags): self
     {
         $this->jsonEncodeFlags = array_reduce($flags, function ($carry, $flag) {
             return $carry | $flag;
         }, 0);
+
         return $this;
     }
 
     /**
      * Encode to json.
      *
-     * @param array<string, mixed> $data
-     * @return string
+     * @param  array<string, mixed>  $data
+     *
      * @throws \Exception If JSON encoding fails
      */
     private function jsonEncode(array $data): string
     {
         $result = null;
 
-        if (!empty($this->jsonEncodeFlags)) {
+        if (! empty($this->jsonEncodeFlags)) {
             $result = json_encode($data, $this->jsonEncodeFlags);
         } else {
             $result = json_encode($data);
         }
 
         if ($result === false) {
-            throw new Exception('Failed to encode data to JSON: ' . json_last_error_msg());
+            throw new Exception('Failed to encode data to JSON: '.json_last_error_msg());
         }
 
         return $result;
     }
+
     /**
      * Set the retry delay in milliseconds.
-     *
-     * @param int $retryDelay
-     * @return self
      */
     public function setRetryDelay(int $retryDelay): self
     {
         $this->retryDelay = $retryDelay;
+
         return $this;
     }
 
     /**
      * Set the retry status codes.
      *
-     * @param array<int> $retryStatusCodes
-     * @return self
+     * @param  array<int>  $retryStatusCodes
      */
     public function setRetryStatusCodes(array $retryStatusCodes): self
     {
         $this->retryStatusCodes = $retryStatusCodes;
+
         return $this;
     }
 
     /**
      * Flatten request body array to PHP multiple format
      *
-     * @param array<mixed> $data
-     * @param string $prefix
+     * @param  array<mixed>  $data
      * @return array<mixed>
      */
     private static function flatten(array $data, string $prefix = ''): array
@@ -259,39 +263,59 @@ class Client
     }
 
     /**
-     * Retry a callback with exponential backoff
+     * Retry a callback with delay, respecting the overall timeout budget.
      *
-     * @param callable $callback
-     * @return mixed
-     * @throws \Exception
+     * The total time across all retries (including delays) will not exceed
+     * the configured timeout. Per-request timeouts are reduced on subsequent
+     * attempts to fit within the remaining budget.
+     *
+     * @param  callable  $callback  Accepts (int $timeoutMs, int $connectTimeoutMs) and returns Response
+     * @param  int  $totalTimeoutMs  Total timeout budget in milliseconds
+     * @param  int  $connectTimeoutMs  Connection timeout in milliseconds
      */
-    private function withRetries(callable $callback): mixed
+    private function withRetries(callable $callback, int $totalTimeoutMs, int $connectTimeoutMs): Response
     {
         $attempts = 1;
+        $startTime = microtime(true);
 
         while (true) {
-            $res = $callback();
+            $elapsedMs = (microtime(true) - $startTime) * 1000;
+            $remainingMs = (int) ($totalTimeoutMs - $elapsedMs);
 
-            if (!in_array($res->getStatusCode(), $this->retryStatusCodes) || $attempts >= $this->maxRetries) {
+            $requestTimeout = $attempts === 1 ? $totalTimeoutMs : max(1, $remainingMs);
+            $requestConnectTimeout = min($connectTimeoutMs, $requestTimeout);
+
+            $res = $callback($requestTimeout, $requestConnectTimeout);
+
+            if (! in_array($res->getStatusCode(), $this->retryStatusCodes) || $attempts >= $this->maxRetries) {
+                return $res;
+            }
+
+            $elapsedMs = (microtime(true) - $startTime) * 1000;
+            $remainingMs = $totalTimeoutMs - $elapsedMs;
+
+            if ($remainingMs <= $this->retryDelay) {
                 return $res;
             }
 
             usleep($this->retryDelay * 1000); // Convert milliseconds to microseconds
             $attempts++;
+
+            $elapsedMs = (microtime(true) - $startTime) * 1000;
+            if ($elapsedMs >= $totalTimeoutMs) {
+                return $res;
+            }
         }
     }
 
     /**
      * This method is used to make a request to the server.
      *
-     * @param string $url
-     * @param string $method
-     * @param array<string>|array<string, mixed>|string|null $body
-     * @param array<string, mixed> $query
-     * @param ?callable $chunks Optional callback function that receives a Chunk object
-     * @param ?int $timeoutMs Optional request timeout in milliseconds
-     * @param ?int $connectTimeoutMs Optional connection timeout in milliseconds
-     * @return Response
+     * @param  array<string>|array<string, mixed>|string|null  $body
+     * @param  array<string, mixed>  $query
+     * @param  ?callable  $chunks  Optional callback function that receives a Chunk object
+     * @param  ?int  $timeoutMs  Optional request timeout in milliseconds
+     * @param  ?int  $connectTimeoutMs  Optional connection timeout in milliseconds
      */
     public function fetch(
         string $url,
@@ -302,12 +326,12 @@ class Client
         ?int $timeoutMs = null,
         ?int $connectTimeoutMs = null,
     ): Response {
-        if (!empty($this->baseUrl) && !str_starts_with($url, 'http://') && !str_starts_with($url, 'https://')) {
-            $url = rtrim($this->baseUrl, '/') . '/' . ltrim($url, '/');
+        if (! empty($this->baseUrl) && ! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
+            $url = rtrim($this->baseUrl, '/').'/'.ltrim($url, '/');
         }
 
-        if (!in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
-            throw new Exception("Unsupported HTTP method");
+        if (! in_array($method, [self::METHOD_PATCH, self::METHOD_GET, self::METHOD_CONNECT, self::METHOD_DELETE, self::METHOD_POST, self::METHOD_HEAD, self::METHOD_OPTIONS, self::METHOD_PUT, self::METHOD_TRACE])) {
+            throw new Exception('Unsupported HTTP method');
         }
 
         if (is_array($body) && isset($this->headers['content-type'])) {
@@ -323,7 +347,7 @@ class Client
         if ($query) {
             $url = rtrim($url, '?&');
             $separator = str_contains($url, '?') ? '&' : '?';
-            $url = $url . $separator . http_build_query($query);
+            $url = $url.$separator.http_build_query($query);
         }
 
         $options = new RequestOptions(
@@ -334,20 +358,29 @@ class Client
             userAgent: $this->userAgent
         );
 
-        $sendRequest = function () use ($url, $method, $body, $options, $chunks): Response {
+        $sendRequest = function (int $requestTimeoutMs = 0, int $requestConnectTimeoutMs = 0) use ($url, $method, $body, $options, $chunks): Response {
+            $requestOptions = ($requestTimeoutMs > 0)
+                ? new RequestOptions(
+                    timeout: $requestTimeoutMs,
+                    connectTimeout: $requestConnectTimeoutMs,
+                    maxRedirects: $options->getMaxRedirects(),
+                    allowRedirects: $options->getAllowRedirects(),
+                    userAgent: $options->getUserAgent()
+                )
+                : $options;
+
             return $this->adapter->send(
                 url: $url,
                 method: $method,
                 body: $body,
                 headers: $this->headers,
-                options: $options,
+                options: $requestOptions,
                 chunkCallback: $chunks
             );
         };
 
         if ($this->maxRetries > 0) {
-            /** @var Response $response */
-            $response = $this->withRetries($sendRequest);
+            $response = $this->withRetries($sendRequest, $options->getTimeout(), $options->getConnectTimeout());
         } else {
             $response = $sendRequest();
         }
@@ -357,8 +390,6 @@ class Client
 
     /**
      * Get the request timeout in milliseconds.
-     *
-     * @return int
      */
     public function getTimeout(): int
     {
@@ -367,8 +398,6 @@ class Client
 
     /**
      * Get whether redirects are allowed.
-     *
-     * @return bool
      */
     public function getAllowRedirects(): bool
     {
@@ -377,8 +406,6 @@ class Client
 
     /**
      * Get the maximum number of redirects.
-     *
-     * @return int
      */
     public function getMaxRedirects(): int
     {
@@ -387,8 +414,6 @@ class Client
 
     /**
      * Get the connection timeout in milliseconds.
-     *
-     * @return int
      */
     public function getConnectTimeout(): int
     {
@@ -397,8 +422,6 @@ class Client
 
     /**
      * Get the user agent.
-     *
-     * @return string
      */
     public function getUserAgent(): string
     {
@@ -407,8 +430,6 @@ class Client
 
     /**
      * Get the maximum number of retries.
-     *
-     * @return int
      */
     public function getMaxRetries(): int
     {
@@ -417,8 +438,6 @@ class Client
 
     /**
      * Get the retry delay.
-     *
-     * @return int
      */
     public function getRetryDelay(): int
     {

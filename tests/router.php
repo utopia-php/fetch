@@ -4,13 +4,14 @@ $method = $_SERVER['REQUEST_METHOD']; // Get the request method
 $url = $_SERVER['HTTP_HOST']; // Get the request URL
 $query = $_GET; // Get the request arguments/queries
 $headers = getallheaders(); // Get request headers
-$body = file_get_contents("php://input"); // Get the request body
+$body = file_get_contents('php://input'); // Get the request body
 $files = $_FILES; // Get the request files
 
-$stateFile = __DIR__ . '/state.json';
+$stateFile = __DIR__.'/state.json';
 
 /**
  * Get the state from the state file
+ *
  * @return array<string, mixed>
  */
 function getState(): array
@@ -20,19 +21,21 @@ function getState(): array
         $data = file_get_contents($stateFile);
 
         if ($data === false) {
-            throw new \Exception('Failed to read state file');
+            throw new Exception('Failed to read state file');
         }
 
         $decoded = json_decode($data, true);
+
         return is_array($decoded) ? $decoded : [];
     }
+
     return [];
 }
 
 /**
  * Set the state to the state file
- * @param array<string, mixed> $newState
- * @return void
+ *
+ * @param  array<string, mixed>  $newState
  */
 function setState(array $newState): void
 {
@@ -40,21 +43,21 @@ function setState(array $newState): void
     file_put_contents($stateFile, json_encode($newState, JSON_PRETTY_PRINT));
 }
 
-$curPageName = substr($_SERVER['REQUEST_URI'], strrpos($_SERVER['REQUEST_URI'], "/") + 1);
+$curPageName = substr($_SERVER['REQUEST_URI'], strrpos($_SERVER['REQUEST_URI'], '/') + 1);
 
 if ($curPageName == 'redirect') {
     header('Location: http://127.0.0.1:8000/redirectedPage');
     exit;
 } elseif ($curPageName == 'image') {
-    $filename = __DIR__."/resources/logo.png";
+    $filename = __DIR__.'/resources/logo.png';
     header("Content-disposition: attachment;filename=$filename");
-    header("Content-type: application/octet-stream");
+    header('Content-type: application/octet-stream');
     readfile($filename);
     exit;
 } elseif ($curPageName == 'text') {
-    $filename = __DIR__."/resources/test.txt";
+    $filename = __DIR__.'/resources/test.txt';
     header("Content-disposition: attachment;filename=$filename");
-    header("Content-type: application/octet-stream");
+    header('Content-type: application/octet-stream');
     readfile($filename);
     exit;
 } elseif ($curPageName == 'mock-retry') {
@@ -64,12 +67,12 @@ if ($curPageName == 'redirect') {
 
     if ($state['attempts'] <= 2) {
         http_response_code(503);
-        throw new \Exception('Mock retry error');
+        throw new Exception('Mock retry error');
     }
 
     $body = json_encode([
         'success' => true,
-        'attempts' => $state['attempts']
+        'attempts' => $state['attempts'],
     ]);
 } elseif ($curPageName == 'mock-retry-401') {
     $state = getState();
@@ -78,13 +81,18 @@ if ($curPageName == 'redirect') {
 
     if ($state['attempts'] <= 2) {
         http_response_code(401);
-        throw new \Exception('Mock retry error');
+        throw new Exception('Mock retry error');
     }
 
     $body = json_encode([
         'success' => true,
-        'attempts' => $state['attempts']
+        'attempts' => $state['attempts'],
     ]);
+} elseif ($curPageName == 'mock-retry-always-503') {
+    http_response_code(503);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Service Unavailable']);
+    exit;
 } elseif ($curPageName == 'chunked') {
     // Set headers for chunked response
     header('Content-Type: text/plain');
@@ -94,7 +102,7 @@ if ($curPageName == 'redirect') {
     $chunks = [
         "This is the first chunk\n",
         "This is the second chunk\n",
-        "This is the final chunk\n"
+        "This is the final chunk\n",
     ];
 
     foreach ($chunks as $chunk) {
@@ -115,7 +123,7 @@ if ($curPageName == 'redirect') {
     $chunks = [
         json_encode(['chunk' => 1, 'data' => 'First chunk']),
         json_encode(['chunk' => 2, 'data' => 'Second chunk']),
-        json_encode(['chunk' => 3, 'data' => 'Final chunk'])
+        json_encode(['chunk' => 3, 'data' => 'Final chunk']),
     ];
 
     foreach ($chunks as $chunk) {
@@ -140,7 +148,7 @@ if ($curPageName == 'redirect') {
     $chunks = [
         json_encode(['error' => 'Validation error', 'field' => 'username']),
         json_encode(['error' => 'Additional details', 'context' => 'Form submission']),
-        json_encode(['error' => 'Final error message', 'code' => 'INVALID_INPUT'])
+        json_encode(['error' => 'Final error message', 'code' => 'INVALID_INPUT']),
     ];
 
     foreach ($chunks as $chunk) {

@@ -11,9 +11,9 @@ final class ClientTest extends TestCase
     /**
      * Test that Client uses Curl adapter by default
      */
-    public function testDefaultAdapter(): void
+    public function test_default_adapter(): void
     {
-        $client = new Client();
+        $client = new Client;
         $response = $client->fetch('127.0.0.1:8000', Client::METHOD_GET);
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
@@ -22,9 +22,9 @@ final class ClientTest extends TestCase
     /**
      * Test that Client can use a custom adapter
      */
-    public function testCustomAdapter(): void
+    public function test_custom_adapter(): void
     {
-        $client = new Client(new Curl());
+        $client = new Client(new Curl);
         $response = $client->fetch('127.0.0.1:8000', Client::METHOD_GET);
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
@@ -33,13 +33,13 @@ final class ClientTest extends TestCase
     /**
      * Test that Client works with Swoole adapter if available
      */
-    public function testSwooleAdapter(): void
+    public function test_swoole_adapter(): void
     {
-        if (!class_exists('Swoole\Coroutine\Http\Client')) {
+        if (! class_exists('Swoole\Coroutine\Http\Client')) {
             $this->markTestSkipped('Swoole extension is not installed');
         }
 
-        $client = new Client(new Swoole());
+        $client = new Client(new Swoole);
         $response = $client->fetch('127.0.0.1:8000', Client::METHOD_GET);
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(200, $response->getStatusCode());
@@ -48,16 +48,18 @@ final class ClientTest extends TestCase
     /**
      * End to end test for Client::fetch
      * Uses the PHP inbuilt server to test the Client::fetch method
+     *
      * @runInSeparateProcess
+     *
      * @dataProvider dataSet
-     * @param string $url
-     * @param string $method
-     * @param array<string, mixed>|string|null $body
-     * @param array<string, string> $headers
-     * @param array<string, mixed> $query
-     * @return void
+     *
+     * @param  string  $url
+     * @param  string  $method
+     * @param  array<string, mixed>|string|null  $body
+     * @param  array<string, string>  $headers
+     * @param  array<string, mixed>  $query
      */
-    public function testFetch(
+    public function test_fetch(
         $url,
         $method,
         $body = [],
@@ -67,7 +69,7 @@ final class ClientTest extends TestCase
         $resp = null;
 
         try {
-            $client = new Client();
+            $client = new Client;
             foreach ($headers as $key => $value) {
                 $client->addHeader($key, $value);
             }
@@ -80,6 +82,7 @@ final class ClientTest extends TestCase
             );
         } catch (Exception $e) {
             echo $e;
+
             return;
         }
         if ($resp->getStatusCode() === 200) { // If the response is OK
@@ -90,7 +93,7 @@ final class ClientTest extends TestCase
                 if (empty($body)) { // if body is empty then response body should be an empty string
                     $this->assertSame($respData['body'], '');
                 } else {
-                    if ($headers['content-type'] != "application/x-www-form-urlencoded") {
+                    if ($headers['content-type'] != 'application/x-www-form-urlencoded') {
                         $this->assertSame( // Assert that the body is equal to the response's body
                             $respData['body'],
                             is_string($body) ? $body : json_encode($body) // Converting the body to JSON string
@@ -110,7 +113,7 @@ final class ClientTest extends TestCase
             $this->assertSame($host, $url); // Assert that the host is equal to the response's host
 
             // Check content-type only when headers were provided or body was sent
-            if (!empty($headers) || !empty($body)) {
+            if (! empty($headers) || ! empty($body)) {
                 if (array_key_exists('Content-Type', $respHeaders)) {
                     $contentType = $respHeaders['Content-Type'];
                 } else {
@@ -119,7 +122,7 @@ final class ClientTest extends TestCase
                 if ($contentType !== null) {
                     $this->assertIsString($contentType);
                     $contentType = explode(';', $contentType)[0];
-                    if (!empty($headers)) {
+                    if (! empty($headers)) {
                         $this->assertSame($contentType, $headers['content-type']); // Assert that the content-type is equal to the response's content-type
                     } else {
                         $this->assertSame($contentType, 'application/json');
@@ -127,13 +130,13 @@ final class ClientTest extends TestCase
                 }
             }
         } else { // If the response is not OK
-            echo "Please configure your PHP inbuilt SERVER";
+            echo 'Please configure your PHP inbuilt SERVER';
         }
     }
 
-    public function testFormUrlencodedArrayBody(): void
+    public function test_form_urlencoded_array_body(): void
     {
-        $client = new Client();
+        $client = new Client;
         $client->addHeader('content-type', Client::CONTENT_TYPE_APPLICATION_FORM_URLENCODED);
 
         $resp = $client->fetch(
@@ -162,28 +165,29 @@ final class ClientTest extends TestCase
 
     /**
      * Test for sending a file in the request body
+     *
      * @dataProvider sendFileDataSet
-     * @return void
      */
-    public function testSendFile(
+    public function test_send_file(
         string $path,
         string $contentType,
         string $fileName
     ): void {
         $resp = null;
         try {
-            $client = new Client();
+            $client = new Client;
             $client->addHeader('Content-type', 'multipart/form-data');
             $resp = $client->fetch(
                 url: '127.0.0.1:8000',
                 method: Client::METHOD_POST,
                 body: [
-                    'file' => new \CURLFile(strval(realpath($path)), $contentType, $fileName)
+                    'file' => new \CURLFile(strval(realpath($path)), $contentType, $fileName),
                 ],
                 query: []
             );
         } catch (Exception $e) {
             echo $e;
+
             return;
         }
         if ($resp->getStatusCode() === 200) { // If the response is OK
@@ -202,8 +206,8 @@ final class ClientTest extends TestCase
                     'name' => $fileName,
                     'full_path' => $fileName,
                     'type' => $contentType,
-                    'error' => 0
-                ]
+                    'error' => 0,
+                ],
             ];
             $this->assertIsString($respData['files']);
             $resp_files = json_decode($respData['files'], true);
@@ -213,29 +217,31 @@ final class ClientTest extends TestCase
             $this->assertSame($files['file']['type'], $resp_files['file']['type']);
             $this->assertSame($files['file']['error'], $resp_files['file']['error']);
         } else { // If the response is not OK
-            echo "Please configure your PHP inbuilt SERVER";
+            echo 'Please configure your PHP inbuilt SERVER';
         }
     }
+
     /**
      * Test for getting a file as a response
+     *
      * @dataProvider getFileDataSet
-     * @return void
      */
-    public function testGetFile(
+    public function test_get_file(
         string $path,
         string $type
     ): void {
         $resp = null;
         try {
-            $client = new Client();
+            $client = new Client;
             $resp = $client->fetch(
-                url: '127.0.0.1:8000/' . $type,
+                url: '127.0.0.1:8000/'.$type,
                 method: Client::METHOD_GET,
                 body: [],
                 query: []
             );
         } catch (Exception $e) {
             echo $e;
+
             return;
         }
         if ($resp->getStatusCode() === 200) { // If the response is OK
@@ -246,21 +252,21 @@ final class ClientTest extends TestCase
                 fclose($data);
                 $this->assertSame($resp->getBody(), $contents); // Assert that the body is equal to the expected file contents
             } else {
-                echo "Invalid file path in testcase";
+                echo 'Invalid file path in testcase';
             }
         } else { // If the response is not OK
-            echo "Please configure your PHP inbuilt SERVER";
+            echo 'Please configure your PHP inbuilt SERVER';
         }
     }
+
     /**
      * Test for redirect
-     * @return void
      */
-    public function testRedirect(): void
+    public function test_redirect(): void
     {
         $resp = null;
         try {
-            $client = new Client();
+            $client = new Client;
             $resp = $client->fetch(
                 url: '127.0.0.1:8000/redirect',
                 method: Client::METHOD_GET,
@@ -269,24 +275,24 @@ final class ClientTest extends TestCase
             );
         } catch (Exception $e) {
             echo $e;
+
             return;
         }
         if ($resp->getStatusCode() === 200) { // If the response is OK
             $respData = $resp->json(); // Convert body to array
             $this->assertIsArray($respData);
-            $this->assertSame($respData['page'], "redirectedPage"); // Assert that the page is the redirected page
+            $this->assertSame($respData['page'], 'redirectedPage'); // Assert that the page is the redirected page
         } else { // If the response is not OK
-            echo "Please configure your PHP inbuilt SERVER";
+            echo 'Please configure your PHP inbuilt SERVER';
         }
     }
 
     /**
      * Test setting and getting the timeout.
-     * @return void
      */
-    public function testSetGetTimeout(): void
+    public function test_set_get_timeout(): void
     {
-        $client = new Client();
+        $client = new Client;
         $timeout = 10;
 
         $client->setTimeout($timeout);
@@ -296,11 +302,10 @@ final class ClientTest extends TestCase
 
     /**
      * Test setting and getting the allowRedirects flag.
-     * @return void
      */
-    public function testSetGetAllowRedirects(): void
+    public function test_set_get_allow_redirects(): void
     {
-        $client = new Client();
+        $client = new Client;
         $allowRedirects = true;
 
         $client->setAllowRedirects($allowRedirects);
@@ -310,11 +315,10 @@ final class ClientTest extends TestCase
 
     /**
      * Test setting and getting the maxRedirects.
-     * @return void
      */
-    public function testSetGetMaxRedirects(): void
+    public function test_set_get_max_redirects(): void
     {
-        $client = new Client();
+        $client = new Client;
         $maxRedirects = 5;
 
         $client->setMaxRedirects($maxRedirects);
@@ -324,11 +328,10 @@ final class ClientTest extends TestCase
 
     /**
      * Test setting and getting the connectTimeout.
-     * @return void
      */
-    public function testSetGetConnectTimeout(): void
+    public function test_set_get_connect_timeout(): void
     {
-        $client = new Client();
+        $client = new Client;
         $connectTimeout = 5;
 
         $client->setConnectTimeout($connectTimeout);
@@ -338,12 +341,11 @@ final class ClientTest extends TestCase
 
     /**
      * Test setting and getting the userAgent.
-     * @return void
      */
-    public function testSetGetUserAgent(): void
+    public function test_set_get_user_agent(): void
     {
-        $client = new Client();
-        $userAgent = "MyCustomUserAgent/1.0";
+        $client = new Client;
+        $userAgent = 'MyCustomUserAgent/1.0';
 
         $client->setUserAgent($userAgent);
 
@@ -352,12 +354,11 @@ final class ClientTest extends TestCase
 
     /**
      * Test setting and getting the base URL.
-     * @return void
      */
-    public function testSetGetBaseUrl(): void
+    public function test_set_get_base_url(): void
     {
-        $client = new Client();
-        $baseUrl = "http://localhost:8000";
+        $client = new Client;
+        $baseUrl = 'http://localhost:8000';
 
         $client->setBaseUrl($baseUrl);
 
@@ -366,11 +367,10 @@ final class ClientTest extends TestCase
 
     /**
      * Test base URL prepending to relative URLs.
-     * @return void
      */
-    public function testBaseUrlWithRelativePath(): void
+    public function test_base_url_with_relative_path(): void
     {
-        $client = new Client();
+        $client = new Client;
         $client->setBaseUrl('http://localhost:8000');
 
         $resp = $client->fetch(
@@ -384,17 +384,16 @@ final class ClientTest extends TestCase
             $this->assertEquals($respData['method'], Client::METHOD_GET);
             $this->assertEquals($respData['url'], 'localhost:8000');
         } else {
-            echo "Please configure your PHP inbuilt SERVER";
+            echo 'Please configure your PHP inbuilt SERVER';
         }
     }
 
     /**
      * Test base URL with path appending.
-     * @return void
      */
-    public function testBaseUrlWithPath(): void
+    public function test_base_url_with_path(): void
     {
-        $client = new Client();
+        $client = new Client;
         $client->setBaseUrl('http://localhost:8000');
 
         $resp = $client->fetch(
@@ -405,19 +404,18 @@ final class ClientTest extends TestCase
         if ($resp->getStatusCode() === 200) {
             /** @var array<string, mixed> $respData */
             $respData = $resp->json();
-            $this->assertEquals($respData['page'], "redirectedPage");
+            $this->assertEquals($respData['page'], 'redirectedPage');
         } else {
-            echo "Please configure your PHP inbuilt SERVER";
+            echo 'Please configure your PHP inbuilt SERVER';
         }
     }
 
     /**
      * Test base URL doesn't interfere with absolute URLs.
-     * @return void
      */
-    public function testBaseUrlWithAbsoluteUrl(): void
+    public function test_base_url_with_absolute_url(): void
     {
-        $client = new Client();
+        $client = new Client;
         $client->setBaseUrl('http://example.com');
 
         $resp = $client->fetch(
@@ -431,17 +429,16 @@ final class ClientTest extends TestCase
             $this->assertEquals($respData['method'], Client::METHOD_GET);
             $this->assertEquals($respData['url'], 'localhost:8000');
         } else {
-            echo "Please configure your PHP inbuilt SERVER";
+            echo 'Please configure your PHP inbuilt SERVER';
         }
     }
 
     /**
      * Test base URL with query parameters.
-     * @return void
      */
-    public function testBaseUrlWithQuery(): void
+    public function test_base_url_with_query(): void
     {
-        $client = new Client();
+        $client = new Client;
         $client->setBaseUrl('http://localhost:8000');
 
         $resp = $client->fetch(
@@ -462,17 +459,16 @@ final class ClientTest extends TestCase
                 json_encode(['name' => 'John Doe', 'age' => '30'])
             );
         } else {
-            echo "Please configure your PHP inbuilt SERVER";
+            echo 'Please configure your PHP inbuilt SERVER';
         }
     }
 
     /**
      * Test base URL with trailing slash normalization.
-     * @return void
      */
-    public function testBaseUrlTrailingSlashNormalization(): void
+    public function test_base_url_trailing_slash_normalization(): void
     {
-        $client = new Client();
+        $client = new Client;
 
         // Test with trailing slash in base URL
         $client->setBaseUrl('http://localhost:8000/');
@@ -484,14 +480,15 @@ final class ClientTest extends TestCase
         if ($resp->getStatusCode() === 200) {
             /** @var array<string, mixed> $respData */
             $respData = $resp->json();
-            $this->assertEquals($respData['page'], "redirectedPage");
+            $this->assertEquals($respData['page'], 'redirectedPage');
         } else {
-            echo "Please configure your PHP inbuilt SERVER";
+            echo 'Please configure your PHP inbuilt SERVER';
         }
     }
 
     /**
      * Data provider for testFetch
+     *
      * @return array<string, array<mixed>>
      */
     public function dataSet(): array
@@ -499,7 +496,7 @@ final class ClientTest extends TestCase
         return [
             'get' => [
                 '127.0.0.1:8000',
-                Client::METHOD_GET
+                Client::METHOD_GET,
             ],
             'getWithQuery' => [
                 '127.0.0.1:8000',
@@ -513,7 +510,7 @@ final class ClientTest extends TestCase
             ],
             'postNoBody' => [
                 '127.0.0.1:8000',
-                Client::METHOD_POST
+                Client::METHOD_POST,
             ],
             'postJsonBody' => [
                 '127.0.0.1:8000',
@@ -523,7 +520,7 @@ final class ClientTest extends TestCase
                     'age' => 30,
                 ],
                 [
-                    'content-type' => 'application/json'
+                    'content-type' => 'application/json',
                 ],
             ],
             'postSingleLineJsonStringBody' => [
@@ -531,8 +528,8 @@ final class ClientTest extends TestCase
                 Client::METHOD_POST,
                 '{"name": "John Doe","age": 30}',
                 [
-                    'content-type' => 'application/json'
-                ]
+                    'content-type' => 'application/json',
+                ],
             ],
             'postMultiLineJsonStringBody' => [
                 '127.0.0.1:8000',
@@ -542,8 +539,8 @@ final class ClientTest extends TestCase
                     "age": 30
                 }',
                 [
-                    'content-type' => 'application/json'
-                ]
+                    'content-type' => 'application/json',
+                ],
             ],
             'postFormDataBody' => [
                 '127.0.0.1:8000',
@@ -553,56 +550,58 @@ final class ClientTest extends TestCase
                     'age' => 30,
                 ],
                 [
-                    'content-type' => 'application/x-www-form-urlencoded'
+                    'content-type' => 'application/x-www-form-urlencoded',
                 ],
-            ]
+            ],
         ];
     }
 
     /**
      * Data provider for testSendFile
+     *
      * @return array<string, array<mixed>>
      */
     public function sendFileDataSet(): array
     {
         return [
             'imageFile' => [
-                __DIR__ . '/resources/logo.png',
+                __DIR__.'/resources/logo.png',
                 'image/png',
-                'logo.png'
+                'logo.png',
             ],
             'textFile' => [
-                __DIR__ . '/resources/test.txt',
+                __DIR__.'/resources/test.txt',
                 'text/plain',
-                'text.txt'
+                'text.txt',
             ],
         ];
     }
+
     /**
      * Data provider for testGetFile
+     *
      * @return array<string, array<mixed>>
      */
     public function getFileDataset(): array
     {
         return [
             'imageFile' => [
-                __DIR__ . '/resources/logo.png',
-                'image'
+                __DIR__.'/resources/logo.png',
+                'image',
             ],
             'textFile' => [
-                __DIR__ . '/resources/test.txt',
-                'text'
+                __DIR__.'/resources/test.txt',
+                'text',
             ],
         ];
     }
 
     /**
      * Test for retry functionality
-     * @return void
      */
-    public function testRetry(): void
+    public function test_retry(): void
     {
-        $client = new Client();
+        $client = new Client;
         $client->setMaxRetries(3);
         $client->setRetryDelay(1000);
 
@@ -612,23 +611,22 @@ final class ClientTest extends TestCase
         $res = $client->fetch('127.0.0.1:8000/mock-retry');
         $this->assertSame(200, $res->getStatusCode());
 
-        unlink(__DIR__ . '/state.json');
+        unlink(__DIR__.'/state.json');
 
         // Test if we get a 500 error if we go under the server's max retries
         $client->setMaxRetries(1);
         $res = $client->fetch('127.0.0.1:8000/mock-retry');
         $this->assertSame(503, $res->getStatusCode());
 
-        unlink(__DIR__ . '/state.json');
+        unlink(__DIR__.'/state.json');
     }
 
     /**
      * Test if the retry delay is working
-     * @return void
      */
-    public function testRetryWithDelay(): void
+    public function test_retry_with_delay(): void
     {
-        $client = new Client();
+        $client = new Client;
         $client->setMaxRetries(3);
         $client->setRetryDelay(3000);
         $now = microtime(true);
@@ -636,16 +634,15 @@ final class ClientTest extends TestCase
         $res = $client->fetch('127.0.0.1:8000/mock-retry');
         $this->assertGreaterThan($now + 3.0, microtime(true));
         $this->assertSame(200, $res->getStatusCode());
-        unlink(__DIR__ . '/state.json');
+        unlink(__DIR__.'/state.json');
     }
 
     /**
      * Test custom retry status codes
-     * @return void
      */
-    public function testCustomRetryStatusCodes(): void
+    public function test_custom_retry_status_codes(): void
     {
-        $client = new Client();
+        $client = new Client;
         $client->setMaxRetries(3);
         $client->setRetryDelay(3000);
         $client->setRetryStatusCodes([401]);
@@ -654,16 +651,56 @@ final class ClientTest extends TestCase
         $res = $client->fetch('127.0.0.1:8000/mock-retry-401');
         $this->assertSame(200, $res->getStatusCode());
         $this->assertGreaterThan($now + 3.0, microtime(true));
-        unlink(__DIR__ . '/state.json');
+        unlink(__DIR__.'/state.json');
+    }
+
+    /**
+     * Test that retries respect the overall timeout budget.
+     * Without the fix, retries would compound: maxRetries * retryDelay could far exceed timeout.
+     */
+    public function test_retry_respects_timeout_budget(): void
+    {
+        $client = new Client;
+        $client->setTimeout(3000); // 3 second total budget
+        $client->setMaxRetries(5); // Allow up to 5 retries
+        $client->setRetryDelay(2000); // 2 second delay between retries
+
+        $startTime = microtime(true);
+        // This endpoint always returns 503, forcing all retries
+        $res = $client->fetch('127.0.0.1:8000/mock-retry-always-503');
+        $elapsedMs = (microtime(true) - $startTime) * 1000;
+
+        // Without the fix: 5 attempts with 2s delays = ~8s+ total
+        // With the fix: should stop retrying once 3s budget is exhausted (~2-3s total)
+        $this->assertLessThan(4000, $elapsedMs, 'Total retry time should not exceed the timeout budget');
+        $this->assertSame(503, $res->getStatusCode());
+    }
+
+    /**
+     * Test that per-request timeout is reduced on retries to fit remaining budget.
+     */
+    public function test_retry_adjusts_per_request_timeout(): void
+    {
+        $client = new Client;
+        $client->setTimeout(2000); // 2 second total budget
+        $client->setMaxRetries(10); // Many retries allowed
+        $client->setRetryDelay(500); // 500ms delay
+
+        $startTime = microtime(true);
+        $res = $client->fetch('127.0.0.1:8000/mock-retry-always-503');
+        $elapsedMs = (microtime(true) - $startTime) * 1000;
+
+        // Should complete within timeout budget regardless of maxRetries
+        $this->assertLessThan(2500, $elapsedMs, 'Retries should be bounded by the timeout budget');
+        $this->assertSame(503, $res->getStatusCode());
     }
 
     /**
      * Test for chunk handling
-     * @return void
      */
-    public function testChunkHandling(): void
+    public function test_chunk_handling(): void
     {
-        $client = new Client();
+        $client = new Client;
         $chunks = [];
         $lastChunk = null;
 
@@ -693,11 +730,10 @@ final class ClientTest extends TestCase
 
     /**
      * Test chunk handling with JSON response
-     * @return void
      */
-    public function testChunkHandlingWithJson(): void
+    public function test_chunk_handling_with_json(): void
     {
-        $client = new Client();
+        $client = new Client;
         $client->addHeader('content-type', 'application/json');
 
         $chunks = [];
@@ -728,11 +764,10 @@ final class ClientTest extends TestCase
 
     /**
      * Test chunk handling with error response
-     * @return void
      */
-    public function testChunkHandlingWithError(): void
+    public function test_chunk_handling_with_error(): void
     {
-        $client = new Client();
+        $client = new Client;
         $errorChunk = null;
 
         $response = $client->fetch(
@@ -754,11 +789,10 @@ final class ClientTest extends TestCase
 
     /**
      * Test chunk handling with chunked error response
-     * @return void
      */
-    public function testChunkHandlingWithChunkedError(): void
+    public function test_chunk_handling_with_chunked_error(): void
     {
-        $client = new Client();
+        $client = new Client;
         $client->addHeader('content-type', 'application/json');
         $chunks = [];
         $errorMessages = [];
@@ -785,7 +819,7 @@ final class ClientTest extends TestCase
         $this->assertSame([
             'Validation error',
             'Additional details',
-            'Final error message'
+            'Final error message',
         ], $errorMessages);
 
         // Test the content of specific chunks
@@ -797,11 +831,10 @@ final class ClientTest extends TestCase
 
     /**
      * Test that query parameters are appended correctly when URL has trailing '?'
-     * @return void
      */
-    public function testQueryWithTrailingQuestionMark(): void
+    public function test_query_with_trailing_question_mark(): void
     {
-        $client = new Client();
+        $client = new Client;
         $response = $client->fetch(
             url: '127.0.0.1:8000?',
             method: Client::METHOD_GET,
@@ -816,11 +849,10 @@ final class ClientTest extends TestCase
 
     /**
      * Test that query parameters are appended correctly when URL has trailing '&'
-     * @return void
      */
-    public function testQueryWithTrailingAmpersand(): void
+    public function test_query_with_trailing_ampersand(): void
     {
-        $client = new Client();
+        $client = new Client;
         $response = $client->fetch(
             url: '127.0.0.1:8000?existing=value&',
             method: Client::METHOD_GET,
@@ -836,11 +868,10 @@ final class ClientTest extends TestCase
 
     /**
      * Test that query parameters are appended correctly with existing query string
-     * @return void
      */
-    public function testQueryWithExistingParams(): void
+    public function test_query_with_existing_params(): void
     {
-        $client = new Client();
+        $client = new Client;
         $response = $client->fetch(
             url: '127.0.0.1:8000?existing=value',
             method: Client::METHOD_GET,
