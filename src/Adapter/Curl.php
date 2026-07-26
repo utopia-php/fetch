@@ -125,7 +125,7 @@ class Curl implements Adapter
             CURLOPT_URL => $url,
             CURLOPT_HTTPHEADER => $formattedHeaders,
             CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_HEADERFUNCTION => function ($curl, $header) use (&$responseHeaders) {
+            CURLOPT_HEADERFUNCTION => static function ($curl, $header) use (&$responseHeaders) {
                 $len = strlen($header);
                 $header = explode(':', $header, 2);
                 if (count($header) < 2) {
@@ -134,7 +134,7 @@ class Curl implements Adapter
                 $responseHeaders[strtolower(trim($header[0]))] = trim($header[1]);
                 return $len;
             },
-            CURLOPT_WRITEFUNCTION => function ($ch, $data) use ($chunkCallback, &$responseBody, &$chunkIndex) {
+            CURLOPT_WRITEFUNCTION => static function ($ch, $data) use ($chunkCallback, &$responseBody, &$chunkIndex) {
                 if ($chunkCallback !== null) {
                     $chunk = new Chunk(
                         data: $data,
